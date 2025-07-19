@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  FiHome, FiKey, FiUser, FiBox, FiBarChart2, FiUsers, FiSettings, FiSearch,
+  FiHome, FiKey, FiUser, FiBox, FiBarChart2, FiUsers, FiSettings, FiSearch, FiMoreHorizontal,
 } from "react-icons/fi";
+import { useNavigate, useLocation } from "react-router-dom";
 import { IoMdNotificationsOutline } from "react-icons/io";
+import { IoClose } from "react-icons/io5";
 import logo from "./logo_smartclick.png";
 
 const styles = {
@@ -13,10 +15,11 @@ const styles = {
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
   sidebar: {
-    width: 240,
-    backgroundColor: "#ffffff",
     color: "#000000",
-    padding: 20,
+    flexShrink: 0,
+    width: 180, 
+    backgroundColor: "#ffffff",
+    padding: "20px 12px",
   },
   logo: {
     width: 160,
@@ -35,12 +38,14 @@ const styles = {
     paddingLeft: 12,
     marginBottom: 6,
   }),
-
   content: {
     flex: 1,
     backgroundColor: "#003d80",
-    display: "flex",
+    color: "#ffffff",
+    padding: "30px",
     flexDirection: "column",
+    overflowX: "hidden",
+    position: "relative",
   },
   topbar: {
     backgroundColor: "#003d80",
@@ -50,7 +55,6 @@ const styles = {
     alignItems: "center",
     gap: 16,
     color: "white",
-
   },
   searchBox: {
     display: "flex",
@@ -68,57 +72,85 @@ const styles = {
     backgroundColor: "transparent",
     color: "#ffffff",
   },
-  header: {
-    padding: "30px 30px 0 30px",
-  },
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 4,
-    color: "#ffffff",
-  },
-  form: {
-  backgroundColor: "#003d80",
-  borderRadius: 10,
-  padding: 30,
-  width: "100%",         
-  maxWidth: 1000,        
-  margin: "0 auto",      
-  color: "#ffffff",      
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginTop: 30,
-    marginBottom: 10,
-    color: "#ffffff",
+    borderBottom: "1px solid #ffffff44",
+    paddingBottom: 4,
+    margin: "30px 0 20px 0",
+  },
+  formRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 20,
+    marginBottom: 20,
   },
   label: {
-    display: "block",
-    marginBottom: 6,
     fontWeight: "600",
-    color: "#ffffff",
+    marginBottom: 6,
+    display: "block",
   },
-  h2: {
-  color: "#ffffff",     
-  },  
   inputField: {
     width: "100%",
-    padding: 8,
-    borderRadius: 4,
+    padding: "12px 16px",
+    borderRadius: 6,
     border: "none",
-    marginBottom: 16,
+    fontSize: 14,
+    backgroundColor: "#fff",
+    color: "#000",
+    appearance: "none",
   },
-  flexRow: {
-  display: "flex",
-  gap: 20,
-  alignItems: "center",
+  checkboxRow: {
+    display: "flex",
+    gap: 20,
+    alignItems: "center",
+    marginBottom: 20,
+    marginTop: 10,
   },
-
+  toggleWrapper: {
+    display: "flex",
+    gap: 30,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  toggle: {
+    position: "relative",
+    display: "inline-block",
+    width: 42,
+    height: 22,
+  },
+  toggleSlider: (on) => ({
+    position: "absolute",
+    cursor: "pointer",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: on ? "#22c55e" : "#ccc",
+    borderRadius: 20,
+    transition: ".4s",
+  }),
+  toggleCircle: (on) => ({
+    position: "absolute",
+    height: 16,
+    width: 16,
+    left: on ? 22 : 3,
+    top: 3,
+    backgroundColor: "white",
+    borderRadius: "50%",
+    transition: ".4s",
+  }),
   buttonRow: {
-    marginTop: 30,
     display: "flex",
     gap: 12,
+    marginTop: 30,
+    position: "relative",
   },
   button: {
     padding: "10px 20px",
@@ -126,31 +158,125 @@ const styles = {
     borderRadius: 6,
     fontWeight: 600,
     cursor: "pointer",
-    minWidth: 120,            
     fontSize: 14,
-}
+  },
+  menuButtonWrapper: {
+    position: "relative",
+    display: "inline-block",
+  },
+  dropdownMenu: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    marginTop: 8,
+    backgroundColor: "#ffffff",
+    border: "1px solid #ccc",
+    borderRadius: 6,
+    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+    zIndex: 10,
+    minWidth: 160,
+  },
+  dropdownItem: {
+    padding: "10px 16px",
+    cursor: "pointer",
+    fontSize: 14,
+    borderBottom: "1px solid #eee",
+    backgroundColor: "#fff",
+    color: "#000",
+    borderRadius: 6,
+    transition: "background-color 0.2s ease",
+  },
+  notiPanel: {
+    position: "absolute",
+    top: 60,
+    right: 30,
+    backgroundColor: "white",
+    width: 300,
+    borderRadius: 10,
+    boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+    zIndex: 1000,
+    maxHeight: 400,
+    overflowY: "auto",
+    border: "1px solid #94a3b8",
+    color: "#000",
+  },
+  notiHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderBottom: "1px solid #ccc",
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#000"
+  },
+  notiItem: {
+    padding: "10px 16px",
+    borderBottom: "1px solid #f1f5f9",
+    fontSize: 14,
+    color: "#000"
+  }
 
 };
 
 const navItems = [
-  { label: "Dashboard", icon: <FiHome /> },
-  { label: "Create License", icon: <FiKey /> },
-  { label: "Clients", icon: <FiUser /> },
-  { label: "Products", icon: <FiBox /> },
-  { label: "Reports", icon: <FiBarChart2 /> },
-  { label: "Admin Users & Roles", icon: <FiUsers /> },
-  { label: "Setting / Logs", icon: <FiSettings /> },
+  { label: "Dashboard", icon: <FiHome />, path: "/" },
+  { label: "Create License", icon: <FiKey />, path: "/create" },
+  { label: "Clients", icon: <FiUser />, path: "/client" },
+  { label: "Products", icon: <FiBox />, path: "/product" },
+  { label: "Reports", icon: <FiBarChart2 />, path: "/reports" },
+  { label: "Admin Users & Roles", icon: <FiUsers />, path: "/admin-users" },
+  { label: "Setting / Logs", icon: <FiSettings />, path: "/settings" },
 ];
 
 export default function CreateLicense() {
+  const [onlineCheckin, setOnlineCheckin] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [showNoti, setShowNoti] = useState(false);
+  const menuRef = useRef(null);
+  const notiRef = useRef();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notiRef.current && !notiRef.current.contains(e.target)) {
+        setShowNoti(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const notifications = [
+    "License expired for Client ABC",
+    "New client added: XYZ Co.",
+    "Trial license expiring soon",
+  ];
+
+  const [selectedClient, setSelectedClient] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [selectedVersion, setSelectedVersion] = useState("");
+
+  const clientOptions = ["Client A", "Client B", "Client C"];
+  const productOptions = ["SmartPOS", "SmartHotel", "SmartRetail"];
+  const versionOptions = ["v1.0", "v2.0", "v3.0"];
+
   return (
     <div style={styles.container}>
       <div style={styles.sidebar}>
         <img src={logo} alt="SmartClick Logo" style={styles.logo} />
         {navItems.map((item) => {
-          const isActive = item.label === "Create License";
+          const isActive = location.pathname === item.path;
           return (
-            <div key={item.label} style={styles.navItem(isActive)}>
+            <div
+              key={item.label}
+              style={styles.navItem(isActive)}
+              onClick={() => navigate(item.path)}
+            >
               {item.icon} {item.label}
             </div>
           );
@@ -160,59 +286,146 @@ export default function CreateLicense() {
       <div style={styles.content}>
         <div style={styles.topbar}>
           <div style={styles.searchBox}>
-            <FiSearch />
+            <FiSearch color="white" />
             <input placeholder="search" style={styles.input} />
           </div>
-          <IoMdNotificationsOutline size={24} />
+          <div style={{ cursor: "pointer" }} onClick={() => setShowNoti(true)}>
+            <IoMdNotificationsOutline size={24} color="white" />
+          </div>
         </div>
 
-        <div style={styles.form}>
-          <h2>Create License</h2>
+        {showNoti && (
+          <div style={styles.notiPanel} ref={notiRef}>
+            <div style={styles.notiHeader}>
+              Notifications
+              <IoClose onClick={() => setShowNoti(false)} style={{ cursor: "pointer" }} />
+            </div>
+            {notifications.map((msg, idx) => (
+              <div key={idx} style={styles.notiItem}>{msg}</div>
+            ))}
+          </div>
+        )}
 
-          <div style={styles.sectionTitle}>Select Client & Product</div>
-          <div style={styles.flexRow}>
-            <div style={{ flex: 1 }}>
-              <label style={styles.label}>Client</label>
-              <select style={styles.inputField}></select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={styles.label}>Product</label>
-              <select style={styles.inputField}></select>
-            </div>
+        <h2 style={styles.title}>Create License</h2>
+
+        <div style={styles.sectionTitle}>Select Client & Product</div>
+        <div style={styles.formRow}>
+          <div>
+            <label style={styles.label}>Client</label>
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              style={styles.inputField}
+            >
+              <option value="">-- Select Client --</option>
+              {clientOptions.map((client) => (
+                <option key={client} value={client}>{client}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label style={styles.label}>Version</label>
-            <select style={styles.inputField}></select>
+            <label style={styles.label}>Product</label>
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              style={styles.inputField}
+            >
+              <option value="">-- Select Product --</option>
+              {productOptions.map((product) => (
+                <option key={product} value={product}>{product}</option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        <div>
+          <label style={styles.label}>Version</label>
+          <select
+            value={selectedVersion}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            style={styles.inputField}
+          >
+            <option value="">-- Select Version --</option>
+            {versionOptions.map((version) => (
+              <option key={version} value={version}>{version}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={styles.checkboxRow}>
+          <label><input type="checkbox" /> Trial</label>
+          <label><input type="checkbox" /> Subscription</label>
+          <label><input type="checkbox" /> Perpetual</label>
+        </div>
+
+        <div style={styles.sectionTitle}>Activation & Constraints</div>
+        <div style={styles.formRow}>
           <div>
-            <input type="checkbox" /> Trial
-            <input type="checkbox" style={{ marginLeft: 16 }} /> Subscription
-            <input type="checkbox" style={{ marginLeft: 16 }} /> Perpetual
+            <label style={styles.label}>Max Activations</label>
+            <input type="number" style={styles.inputField} />
           </div>
+        </div>
 
-          <div style={styles.sectionTitle}>Activation & Constraints</div>
-          <label style={styles.label}>Max Activations</label>
-          <input type="number" style={styles.inputField} />
-
-          <div style={{ ...styles.flexRow, justifyContent: "space-between" }}>
-            <div>
-              <input type="checkbox" /> IP Lock
-            </div>
-            <div>
-              Online Check-in
-              <input type="radio" name="checkin" defaultChecked /> Off
-              <input type="radio" name="checkin" style={{ marginLeft: 16 }} /> Online Check-in
-            </div>
+        <div style={styles.toggleWrapper}>
+          <label><input type="checkbox" /> IP Lock</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span>Online Check-in</span>
+            <label style={styles.toggle}>
+              <input
+                type="checkbox"
+                checked={onlineCheckin}
+                onChange={() => setOnlineCheckin(!onlineCheckin)}
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
+              <span style={styles.toggleSlider(onlineCheckin)} />
+              <span style={styles.toggleCircle(onlineCheckin)} />
+            </label>
           </div>
+        </div>
 
-          <div style={styles.sectionTitle}>Notes & Internal Reference</div>
-          <label style={styles.label}>Internal Notes</label>
-          <input type="text" style={styles.inputField} />
+        <div style={styles.sectionTitle}>Notes & Internal Reference</div>
+        <div style={styles.formRow}>
+          <div>
+            <label style={styles.label}>Internal Notes</label>
+            <input type="text" style={styles.inputField} />
+          </div>
+        </div>
 
-          <div style={styles.buttonRow}>
-            <button style={{ ...styles.button, backgroundColor: "#1e40af", color: "white" }}>Generate License</button>
-            <button style={{ ...styles.button, backgroundColor: "#cbd5e1" }}>Download</button>
-            <button style={{ ...styles.button, backgroundColor: "#e5e7eb" }}>...</button>
+        <div style={styles.buttonRow} ref={menuRef}>
+          <button style={{ ...styles.button, backgroundColor: "#3b82f6", color: "white" }}>
+            Generate License
+          </button>
+          <button style={{ ...styles.button, backgroundColor: "#ffffff", color: "#000000" }}>
+            Download
+          </button>
+          <div style={styles.menuButtonWrapper}>
+            <button
+              onClick={toggleMenu}
+              style={{ ...styles.button, backgroundColor: "#ffffff", color: "#000000" }}
+            >
+              <FiMoreHorizontal />
+            </button>
+            {menuOpen && (
+              <div style={styles.dropdownMenu}>
+                {["Send to Client", "Save Draft"].map((label) => (
+                  <div
+                    key={label}
+                    onClick={() => {
+                      alert(label);
+                      setMenuOpen(false);
+                    }}
+                    onMouseEnter={() => setHoveredItem(label)}
+                    onMouseLeave={() => setHoveredItem(null)}
+                    style={{
+                      ...styles.dropdownItem,
+                      backgroundColor: hoveredItem === label ? "#b9b9b9ff" : "#fff",
+                    }}
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
