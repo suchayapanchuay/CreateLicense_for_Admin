@@ -18,17 +18,15 @@ const navItems = [
   { label: "Setting / Logs", icon: <FiSettings />, path: "/settings" },
 ];
 
-export default function AddClient() {
+export default function AddProduct() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showNoti, setShowNoti] = useState(false);
 
   const [form, setForm] = useState({
-    companyName: "",
-    contactName: "",
-    email: "",
-    estimatedUsers: "0 - 10",
-    notes: "",
+    name: "",
+    category: "",
+    status: "Active",
   });
 
   const handleChange = (e) => {
@@ -38,8 +36,8 @@ export default function AddClient() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Client added:", form);
-    navigate("/client");
+    console.log("New product:", form);
+    navigate("/product");
   };
 
   return (
@@ -48,8 +46,8 @@ export default function AddClient() {
         <img src={logo} alt="SmartClick Logo" style={styles.logo} />
         {navItems.map((item) => {
           const isActive =
-            item.path === "/client"
-              ? location.pathname.startsWith("/client")
+            item.path === "/product"
+              ? location.pathname.startsWith("/product")
               : location.pathname === item.path;
 
           return (
@@ -87,58 +85,40 @@ export default function AddClient() {
         )}
 
         <div style={styles.formContainer}>
-          <button onClick={() => navigate("/client")} style={styles.backButton}>
-            ← Back to Clients
+          <button onClick={() => navigate("/product")} style={styles.backButton}>
+            ← Back to Products
           </button>
 
-          <h2 style={styles.title}>Add Client</h2>
+          <h2 style={styles.title}>Add Product</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>Company Name *</label>
+            <label style={styles.label}>Product Name *</label>
             <input
-              name="companyName"
-              value={form.companyName}
+              name="name"
+              value={form.name}
               onChange={handleChange}
               style={styles.inputBox}
               required
             />
 
-            <label style={styles.label}>Contact Name</label>
+            <label style={styles.label}>Category</label>
             <input
-              name="contactName"
-              value={form.contactName}
+              name="category"
+              value={form.category}
               onChange={handleChange}
               style={styles.inputBox}
             />
 
-            <label style={styles.label}>Email</label>
-            <input
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              style={styles.inputBox}
-            />
-
-            <label style={styles.label}>Estimated Users</label>
+            <label style={styles.label}>Status</label>
             <select
-              name="estimatedUsers"
-              value={form.estimatedUsers}
+              name="status"
+              value={form.status}
               onChange={handleChange}
               style={styles.inputBox}
             >
-              <option>0 - 10</option>
-              <option>11 - 50</option>
-              <option>51 - 100</option>
-              <option>101+</option>
+              <option>Active</option>
+              <option>Inactive</option>
             </select>
-
-            <label style={styles.label}>Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              style={{ ...styles.inputBox, height: 80 }}
-            />
 
             <button type="submit" style={styles.submitButton}>Add</button>
           </form>
@@ -273,8 +253,8 @@ const styles = {
     borderRadius: 6,
     padding: "8px 12px",
     fontSize: 14,
-    width: "95%",           
-    alignSelf: "center",    
+    width: "95%",
+    alignSelf: "center",
     boxSizing: "border-box",
   },
   submitButton: {

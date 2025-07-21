@@ -28,7 +28,7 @@ const styles = {
     padding: "20px 12px",
   },
   logo: {
-    width: 140,
+    width: 160,
     marginBottom: 40,
   },
   navItem: (active) => ({

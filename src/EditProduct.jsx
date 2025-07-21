@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
-  FiHome, FiKey, FiUser, FiBox, FiBarChart2,
-  FiUsers, FiSettings, FiSearch
+  FiHome, FiKey, FiUser, FiBox, FiBarChart2, FiUsers,
+  FiSettings, FiSearch
 } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
@@ -18,18 +18,28 @@ const navItems = [
   { label: "Setting / Logs", icon: <FiSettings />, path: "/settings" },
 ];
 
-export default function AddClient() {
+export default function EditProduct() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [showNoti, setShowNoti] = useState(false);
 
   const [form, setForm] = useState({
-    companyName: "",
-    contactName: "",
-    email: "",
-    estimatedUsers: "0 - 10",
-    notes: "",
+    name: "",
+    category: "",
+    status: "Active",
   });
+
+  useEffect(() => {
+    // Mock API call to prefill product data
+    setTimeout(() => {
+      setForm({
+        name: `Product ${id}`,
+        category: "Sample Category",
+        status: "Active",
+      });
+    }, 300);
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,8 +48,8 @@ export default function AddClient() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Client added:", form);
-    navigate("/client");
+    console.log("Edited product:", form);
+    navigate("/product");
   };
 
   return (
@@ -47,11 +57,7 @@ export default function AddClient() {
       <div style={styles.sidebar}>
         <img src={logo} alt="SmartClick Logo" style={styles.logo} />
         {navItems.map((item) => {
-          const isActive =
-            item.path === "/client"
-              ? location.pathname.startsWith("/client")
-              : location.pathname === item.path;
-
+          const isActive = location.pathname === item.path;
           return (
             <div
               key={item.label}
@@ -86,61 +92,54 @@ export default function AddClient() {
           </div>
         )}
 
-        <div style={styles.formContainer}>
-          <button onClick={() => navigate("/client")} style={styles.backButton}>
-            ← Back to Clients
+        <div style={{ padding: "30px" }}>
+          <button onClick={() => navigate("/product")} style={styles.backButton}>
+            ← Back to Products
           </button>
-
-          <h2 style={styles.title}>Add Client</h2>
+          <h2 style={styles.title}>Edit Product</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>Company Name *</label>
+            <label style={styles.label}>Product Name</label>
             <input
-              name="companyName"
-              value={form.companyName}
+              name="name"
+              value={form.name}
               onChange={handleChange}
               style={styles.inputBox}
               required
             />
 
-            <label style={styles.label}>Contact Name</label>
+            <label style={styles.label}>Category</label>
             <input
-              name="contactName"
-              value={form.contactName}
+              name="category"
+              value={form.category}
               onChange={handleChange}
               style={styles.inputBox}
+              required
             />
 
-            <label style={styles.label}>Email</label>
-            <input
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              style={styles.inputBox}
-            />
-
-            <label style={styles.label}>Estimated Users</label>
+            <label style={styles.label}>Status</label>
             <select
-              name="estimatedUsers"
-              value={form.estimatedUsers}
+              name="status"
+              value={form.status}
               onChange={handleChange}
               style={styles.inputBox}
             >
-              <option>0 - 10</option>
-              <option>11 - 50</option>
-              <option>51 - 100</option>
-              <option>101+</option>
+              <option>Active</option>
+              <option>Inactive</option>
             </select>
 
-            <label style={styles.label}>Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              style={{ ...styles.inputBox, height: 80 }}
-            />
-
-            <button type="submit" style={styles.submitButton}>Add</button>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+              <button
+                type="button"
+                onClick={() => navigate("/product")}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </button>
+              <button type="submit" style={styles.submitButton}>
+                Save Change
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -182,12 +181,9 @@ const styles = {
     flex: 1,
     backgroundColor: "#003d80",
     padding: "30px",
-    flexDirection: "column",
-    overflowX: "hidden",
     position: "relative",
   },
   topbar: {
-    backgroundColor: "#003d80",
     padding: "12px 20px",
     display: "flex",
     justifyContent: "flex-end",
@@ -202,7 +198,6 @@ const styles = {
     border: "1px solid white",
     borderRadius: 10,
     padding: "4px 12px",
-    color: "#ffffff",
   },
   input: {
     border: "none",
@@ -238,20 +233,11 @@ const styles = {
     borderBottom: "1px solid #f1f5f9",
     fontSize: 14,
   },
-  formContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "40px 30px",
-  },
   title: {
     color: "white",
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 20,
-    alignSelf: "flex-start",
-    maxWidth: 480,
-    width: "100%",
   },
   form: {
     backgroundColor: "white",
@@ -273,19 +259,27 @@ const styles = {
     borderRadius: 6,
     padding: "8px 12px",
     fontSize: 14,
-    width: "95%",           
-    alignSelf: "center",    
+    width: "95%",
+    alignSelf: "center",
     boxSizing: "border-box",
   },
-  submitButton: {
-    marginTop: 12,
-    backgroundColor: "#1d4ed8",
-    color: "#fff",
-    fontWeight: "bold",
-    padding: "10px",
-    border: "none",
+  cancelButton: {
+    backgroundColor: "transparent",
+    color: "#003d80",
+    border: "1px solid #003d80",
+    padding: "8px 16px",
     borderRadius: 6,
     cursor: "pointer",
+    fontWeight: "bold",
+  },
+  submitButton: {
+    backgroundColor: "#0ea5e9",
+    color: "white",
+    border: "none",
+    padding: "8px 16px",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontWeight: "bold",
   },
   backButton: {
     backgroundColor: "#1e40af",

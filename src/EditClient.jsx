@@ -1,11 +1,13 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   FiHome, FiKey, FiUser, FiBox, FiBarChart2,
   FiUsers, FiSettings, FiSearch
 } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
+import { toast, ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 import logo from "./logo_smartclick.png";
 
 const navItems = [
@@ -18,18 +20,33 @@ const navItems = [
   { label: "Setting / Logs", icon: <FiSettings />, path: "/settings" },
 ];
 
-export default function AddClient() {
+export default function EditClient() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams();
   const [showNoti, setShowNoti] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
     companyName: "",
-    contactName: "",
+    name: "",
     email: "",
     estimatedUsers: "0 - 10",
     notes: "",
   });
+
+  useEffect(() => {
+    fetch(`/api/clients/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        setForm(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load client", err);
+        setLoading(false);
+      });
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,12 +55,25 @@ export default function AddClient() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Client added:", form);
-    navigate("/client");
+    // Mock update, replace with actual API call
+    fetch(`/api/clients/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to update");
+        toast.success("Client updated successfully!");
+        setTimeout(() => navigate("/client"), 1500);
+      })
+      .catch(() => toast.error("Failed to update client"));
   };
+
+  if (loading) return <div style={{ padding: 30, color: "white" }}>Loading...</div>;
 
   return (
     <div style={styles.container}>
+      <ToastContainer />
       <div style={styles.sidebar}>
         <img src={logo} alt="SmartClick Logo" style={styles.logo} />
         {navItems.map((item) => {
@@ -87,14 +117,13 @@ export default function AddClient() {
         )}
 
         <div style={styles.formContainer}>
-          <button onClick={() => navigate("/client")} style={styles.backButton}>
-            ← Back to Clients
-          </button>
-
-          <h2 style={styles.title}>Add Client</h2>
+          <button onClick={() => navigate(`/client-details/${id}`)} style={styles.backButton}>
+            ← Back to Client Details
+          </button>          
+          <h2 style={styles.title}>Edit Client</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>Company Name *</label>
+            <label style={styles.label}>Company Name</label>
             <input
               name="companyName"
               value={form.companyName}
@@ -103,12 +132,13 @@ export default function AddClient() {
               required
             />
 
-            <label style={styles.label}>Contact Name</label>
+            <label style={styles.label}>Name</label>
             <input
-              name="contactName"
-              value={form.contactName}
+              name="name"
+              value={form.name}
               onChange={handleChange}
               style={styles.inputBox}
+              required
             />
 
             <label style={styles.label}>Email</label>
@@ -117,6 +147,8 @@ export default function AddClient() {
               value={form.email}
               onChange={handleChange}
               style={styles.inputBox}
+              type="email"
+              required
             />
 
             <label style={styles.label}>Estimated Users</label>
@@ -140,7 +172,18 @@ export default function AddClient() {
               style={{ ...styles.inputBox, height: 80 }}
             />
 
-            <button type="submit" style={styles.submitButton}>Add</button>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+              <button
+                type="button"
+                onClick={() => navigate("/client")}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </button>
+              <button type="submit" style={styles.submitButton}>
+                Save Change
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -182,12 +225,9 @@ const styles = {
     flex: 1,
     backgroundColor: "#003d80",
     padding: "30px",
-    flexDirection: "column",
-    overflowX: "hidden",
     position: "relative",
   },
   topbar: {
-    backgroundColor: "#003d80",
     padding: "12px 20px",
     display: "flex",
     justifyContent: "flex-end",
@@ -202,7 +242,6 @@ const styles = {
     border: "1px solid white",
     borderRadius: 10,
     padding: "4px 12px",
-    color: "#ffffff",
   },
   input: {
     border: "none",
@@ -273,19 +312,27 @@ const styles = {
     borderRadius: 6,
     padding: "8px 12px",
     fontSize: 14,
-    width: "95%",           
-    alignSelf: "center",    
+    width: "95%",
+    alignSelf: "center",
     boxSizing: "border-box",
   },
-  submitButton: {
-    marginTop: 12,
-    backgroundColor: "#1d4ed8",
-    color: "#fff",
-    fontWeight: "bold",
-    padding: "10px",
-    border: "none",
+  cancelButton: {
+    backgroundColor: "transparent",
+    color: "#003d80",
+    border: "1px solid #003d80",
+    padding: "8px 16px",
     borderRadius: 6,
     cursor: "pointer",
+    fontWeight: "bold",
+  },
+  submitButton: {
+    backgroundColor: "#0ea5e9",
+    color: "white",
+    border: "none",
+    padding: "8px 16px",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontWeight: "bold",
   },
   backButton: {
     backgroundColor: "#1e40af",

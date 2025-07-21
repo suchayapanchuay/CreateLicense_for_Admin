@@ -57,7 +57,6 @@ export default function ClientDetails() {
 
   return (
     <div style={styles.container}>
-      {/* Sidebar */}
       <div style={styles.sidebar}>
         <img src={logo} alt="SmartClick Logo" style={styles.logo} />
         {navItems.map((item) => {
@@ -65,7 +64,7 @@ export default function ClientDetails() {
               item.path === "/client"
                 ? location.pathname.startsWith("/client")
                 : location.pathname === item.path;
-          
+
             return (
               <div
                 key={item.label}
@@ -78,9 +77,7 @@ export default function ClientDetails() {
           })}
       </div>
 
-      {/* Main Content */}
       <div style={styles.content}>
-        {/* Topbar */}
         <div style={styles.topbar}>
           <div style={styles.searchBox}>
             <FiSearch color="white" />
@@ -91,7 +88,6 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {/* Notification Panel */}
         {showNoti && (
           <div style={styles.notiPanel}>
             <div style={styles.notiHeader}>
@@ -105,8 +101,8 @@ export default function ClientDetails() {
 
         <div style={{ padding: "30px" }}>
           <button onClick={() => navigate("/client")} style={styles.backButton}>
-                 ← Back to Clients
-               </button>
+            ← Back to Clients
+          </button>
           <h2 style={styles.title}>Client Details</h2>
 
           <div style={styles.card}>
@@ -116,7 +112,7 @@ export default function ClientDetails() {
             <p><strong>Joined:</strong> {client.joined}</p>
             <p><strong>Estimated Users:</strong> {client.estimatedUsers}</p>
             <div style={{ marginTop: 20 }}>
-              <button style={styles.button}>Edit Client</button>
+              <button style={styles.button} onClick={() => navigate(`/client/${client.id}/edit`)}>Edit Client</button>
               <button style={{ ...styles.button, backgroundColor: "#dc2626" }}>Delete Client</button>
             </div>
           </div>
@@ -164,27 +160,26 @@ const styles = {
     padding: "20px 12px",
   },
   logo: {
-    width: 140,
+    width: 160,
     marginBottom: 40,
   },
   navItem: (active) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  padding: "10px 0",
-  fontSize: 15,
-  cursor: "pointer",
-  color: active ? "#ffffff" : "#000000",
-  backgroundColor: active ? "#003d80" : "transparent",
-  borderRadius: 6,
-  paddingLeft: 12,
-  marginBottom: 6,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 0",
+    fontSize: 15,
+    cursor: "pointer",
+    color: active ? "#ffffff" : "#000000",
+    backgroundColor: active ? "#003d80" : "transparent",
+    borderRadius: 6,
+    paddingLeft: 12,
+    marginBottom: 6,
   }),
-
   content: {
     flex: 1,
     backgroundColor: "#003d80",
-    display: "flex",
+    padding: "30px",
     flexDirection: "column",
     overflowX: "hidden",
     position: "relative",
@@ -262,7 +257,6 @@ const styles = {
     borderRadius: 6,
     marginRight: 10,
     cursor: "pointer",
-
   },
   table: {
     width: "100%",
@@ -284,13 +278,13 @@ const styles = {
     borderBottom: "1px solid #e5e7eb",
   },
   backButton: {
-  backgroundColor: "#1e40af",
-  color: "#ffffff",
-  padding: "6px 14px",
-  borderRadius: 6,
-  border: "none",
-  cursor: "pointer",
-  fontSize: 14,
-  marginBottom: 20,
-},
+    backgroundColor: "#1e40af",
+    color: "#ffffff",
+    padding: "6px 14px",
+    borderRadius: 6,
+    border: "none",
+    cursor: "pointer",
+    fontSize: 14,
+    marginBottom: 20,
+  },
 };
