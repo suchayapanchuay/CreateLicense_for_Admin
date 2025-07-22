@@ -198,7 +198,6 @@ const styles = {
 };
 
 
-
 export default function CreateLicense() {
   const [onlineCheckin, setOnlineCheckin] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);

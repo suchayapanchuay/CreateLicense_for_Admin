@@ -14,10 +14,10 @@ import AdminEdit from './AdminEdit';
 import AddAdmin from './AddAdmin';
 import AddApikeys from './AddApikeys';
 import Product from './Product';
-import ProductEdit from './ProductEdit';
+import EditClient from './EditClient';
+import Product from './Product';
 import AddProduct from './AddProduct';
-
-
+import EditProduct from './EditProduct';
 
 function App() {
   return (
@@ -28,9 +28,6 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/client-details/:id" element={<ClientDetails />} />
         <Route path="/client/add" element={<AddClient />} />
-        <Route path="/products" element={<Product />} />
-        <Route path="/products/edit/:id" element={<ProductEdit />} />
-        <Route path="/products/add" element={<AddProduct />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/admin-users" element={<Admin />} />
         <Route path="/admin-users/edit/:id" element={<AdminEdit />} />
@@ -39,6 +36,10 @@ function App() {
         <Route path="/api-keys/add" element={<AddApikeys />} />
         <Route path="/email-template" element={<Email/>} />
         <Route path="/logs" element={<Logs />} />
+        <Route path="/client/:id/edit" element={<EditClient />} />
+        <Route path="/product" element={<Product />} />
+        <Route path="/product/add" element={<AddProduct />} />
+        <Route path="/product/:id/edit" element={<EditProduct />} />
       </Routes>
     </Router>
   );

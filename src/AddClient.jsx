@@ -131,7 +131,7 @@ const styles = {
     padding: "20px 12px",
   },
   logo: {
-    width: 140,
+    width: 160,
     marginBottom: 40,
   },
   navItem: (active) => ({
@@ -150,6 +150,9 @@ const styles = {
   content: {
     flex: 1,
     backgroundColor: "#003d80",
+    padding: "30px",
+    flexDirection: "column",
+    overflowX: "hidden",
     position: "relative",
   },
   topbar: {

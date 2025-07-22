@@ -187,7 +187,6 @@ const styles = {
 };
 
 
-
 export default function Dashboard() {
   const [showNoti, setShowNoti] = useState(false);
   const notiRef = useRef();

@@ -27,11 +27,9 @@ const mockClients = [
 ];
 
 
-
 export default function ClientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [showNoti, setShowNoti] = useState(false);
 
   const client = mockClients.find((c) => c.id === id);
@@ -63,7 +61,6 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {/* Notification Panel */}
         {showNoti && (
           <div style={styles.notiPanel}>
             <div style={styles.notiHeader}>
@@ -88,7 +85,7 @@ export default function ClientDetails() {
             <p><strong>Joined:</strong> {client.joined}</p>
             <p><strong>Estimated Users:</strong> {client.estimatedUsers}</p>
             <div style={{ marginTop: 20 }}>
-              <button style={styles.button}>Edit Client</button>
+              <button style={styles.button} onClick={() => navigate(`/client/${client.id}/edit`)}>Edit Client</button>
               <button style={{ ...styles.button, backgroundColor: "#dc2626" }}>Delete Client</button>
             </div>
           </div>
@@ -211,7 +208,6 @@ const styles = {
     borderRadius: 6,
     marginRight: 10,
     cursor: "pointer",
-
   },
   table: {
     width: "100%",
@@ -233,13 +229,13 @@ const styles = {
     borderBottom: "1px solid #e5e7eb",
   },
   backButton: {
-  backgroundColor: "#1e40af",
-  color: "#ffffff",
-  padding: "6px 14px",
-  borderRadius: 6,
-  border: "none",
-  cursor: "pointer",
-  fontSize: 14,
-  marginBottom: 20,
-},
+    backgroundColor: "#1e40af",
+    color: "#ffffff",
+    padding: "6px 14px",
+    borderRadius: 6,
+    border: "none",
+    cursor: "pointer",
+    fontSize: 14,
+    marginBottom: 20,
+  },
 };

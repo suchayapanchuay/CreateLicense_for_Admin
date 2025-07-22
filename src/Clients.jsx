@@ -132,7 +132,6 @@ const styles = {
 };
 
 
-
 export default function ClientList() {
   const [showNoti, setShowNoti] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
