@@ -50,7 +50,7 @@ export default function Sidebar() {
   { label: "Dashboard", icon: <FiHome />, path: "/" },
   { label: "Create License", icon: <FiKey />, path: "/create" },
   { label: "Clients", icon: <FiUser />, path: "/client" },
-  { label: "Products", icon: <FiBox />, path: "/products" },
+  { label: "Products", icon: <FiBox />, path: "/product" },
   { label: "Reports", icon: <FiBarChart2 />, path: "/reports" },
   { label: "Admin Users & Roles", icon: <FiUsers />, path: "/admin-users" },
   {

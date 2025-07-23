@@ -15,7 +15,6 @@ import AddAdmin from './AddAdmin';
 import AddApikeys from './AddApikeys';
 import Product from './Product';
 import EditClient from './EditClient';
-import Product from './Product';
 import AddProduct from './AddProduct';
 import EditProduct from './EditProduct';
 

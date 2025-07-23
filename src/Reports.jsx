@@ -23,7 +23,7 @@ const styles = {
     backgroundColor: "#003d80",
     display: "flex",
     flexDirection: "column",
-    padding: "30px",
+    padding: "30px 24px",
     overflowX: "hidden",
     position: "relative",
   },
@@ -288,15 +288,24 @@ export default function Reports() {
               </select>
 
             </div>
-            <ResponsiveContainer width="100%" >
-              <LineChart data={filteredData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" interval="preserveStartEnd" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="usage" stroke="#003d80" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            <ResponsiveContainer width="100%" minHeight={260}>
+          <LineChart
+            data={filteredData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="day" interval="preserveStartEnd" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="usage"
+              stroke="#003d80"
+              strokeWidth={2}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+
             <button
               ref={exButtonRefChart}
               onClick={handleExportPDF}

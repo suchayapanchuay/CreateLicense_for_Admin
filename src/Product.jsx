@@ -190,7 +190,7 @@ export default function Product() {
                 <div style={styles.userControls}>
                     <button
                         style={styles.addUserButton}
-                        onClick={() => navigate("/products/add")}
+                        onClick={() => navigate("/product/add")}
                     >
                         Add Product
                     </button>
