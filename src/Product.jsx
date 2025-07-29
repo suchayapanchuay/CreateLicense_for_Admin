@@ -124,6 +124,7 @@ const styles = {
         borderRadius: 6,
         border: "1px solid #ccc",
         fontSize: 14,
+        alignSelf: "flex-start"
     },
     addUserButton: {
         backgroundColor: "#0284c7",
@@ -157,6 +158,12 @@ const styles = {
 export default function Product() {
     const [showNoti, setShowNoti] = useState(false);
     const navigate = useNavigate();
+    const [statusFilter, setStatusFilter] = useState("All");
+
+    const filteredProducts = products.filter(
+      (p) => statusFilter === "All" || p.status === statusFilter
+    );
+
     return (
         <div style={styles.container}>
             <Sidebar />
@@ -188,11 +195,20 @@ export default function Product() {
                 </div>
 
                 <div style={styles.userControls}>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        style={styles.dropdown}
+                      >
+                        <option value="All">All</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
                     <button
                         style={styles.addUserButton}
                         onClick={() => navigate("/product/add")}
                     >
-                        Add Product
+                        + Add Product
                     </button>
                 </div>
 
@@ -206,7 +222,7 @@ export default function Product() {
                         </tr>
                     </thead>
                     <tbody>
-                        {products.map((product, index) => (
+                        {filteredProducts.map((product, index) => (
                             <tr key={index}>
                                 <td style={styles.td}>{product.name}</td>
                                 <td style={styles.td}>{product.cat}</td>
@@ -238,20 +254,6 @@ export default function Product() {
                                             onClick={() => navigate(`/products/edit/${product.id}`)}
                                         >
                                             Edit
-                                        </button>
-                                        <button
-                                            style={{
-                                                cursor: "pointer",
-                                                backgroundColor: "#E25A52",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: 4,
-                                                padding: "6px 12px",
-                                                fontWeight: 500,
-
-                                            }}
-                                        >
-                                            Delete
                                         </button>
                                     </div>
                                 </td>

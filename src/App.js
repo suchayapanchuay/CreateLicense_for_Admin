@@ -17,6 +17,10 @@ import Product from './Product';
 import EditClient from './EditClient';
 import AddProduct from './AddProduct';
 import EditProduct from './EditProduct';
+import NewApiKey from './NewApiKey';
+import EditApiKey from './EditApiKey';
+import Revoke from './Revoke' ;
+import ViewRevoke from './ViewRevoke' ;
 
 function App() {
   return (
@@ -38,7 +42,11 @@ function App() {
         <Route path="/client/:id/edit" element={<EditClient />} />
         <Route path="/product" element={<Product />} />
         <Route path="/product/add" element={<AddProduct />} />
-        <Route path="/product/:id/edit" element={<EditProduct />} />
+        <Route path="/products/edit/:id" element={<EditProduct />} />
+        <Route path="/api-keys/add" element={<NewApiKey />} />
+        <Route path="/api-keys/edit/:id" element={<EditApiKey />} />
+        <Route path="/api-keys/revoke/:id" element={<Revoke />} />
+        <Route path="/api-keys/view-revoke/:id" element={<ViewRevoke />} />
       </Routes>
     </Router>
   );

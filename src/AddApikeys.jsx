@@ -1,35 +1,47 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {FiSearch
-} from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
 import Sidebar from "./SideBar";
 
-export default function AddApikeys() {
+export default function CreateApiKey() {
   const navigate = useNavigate();
   const [showNoti, setShowNoti] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
-    key: "",
-    date:""
+    status: "Active",
+    expirationDate: "",
+    scopes: {
+      issue_license: false,
+      verify_license: false,
+      revoke_license: false,
+    },
+    note: "",
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, checked } = e.target;
+    if (name in form.scopes) {
+      setForm((prev) => ({
+        ...prev,
+        scopes: { ...prev.scopes, [name]: checked },
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("API key created:", form);
+    console.log("Created API Key:", form);
     navigate("/api-keys");
   };
 
   return (
     <div style={styles.container}>
-      <Sidebar/>
+      <Sidebar />
 
       <div style={styles.content}>
         <div style={styles.topbar}>
@@ -58,37 +70,91 @@ export default function AddApikeys() {
             ← Back to API Keys
           </button>
 
-          <h2 style={styles.title}>Create New Key</h2>
+          <h2 style={styles.sectionTitle}>Create API Key</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>Name *</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              style={styles.inputBox}
-              required
-            />
+            <div style={styles.sectionGroup}>
+              <label style={styles.label}>Name *</label>
+              <input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                style={styles.inputBox}
+                required
+              />
 
-            <label style={styles.label}>Key *</label>
-            <input
-              name="key"
-              value={form.key}
-              onChange={handleChange}
-              style={styles.inputBox}
-              required
-            />
+              <label style={styles.label}>Status</label>
+              <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
+                {["Active", "Revoked", "Expired"].map((option) => (
+                  <label
+                    key={option}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 14,
+                      color: "white",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="status"
+                      value={option}
+                      checked={form.status === option}
+                      onChange={handleChange}
+                    />
+                    {option}
+                  </label>
+                ))}
+              </div>
 
-            <label style={styles.label}>Expiration Date</label>
-            <input
-              name="date"
-              type="date"
-              value={form.date}
-              onChange={handleChange}
-              style={styles.inputBox}
-            />
+              <label style={styles.label}>Expiration Date</label>
+              <input
+                type="date"
+                name="expirationDate"
+                value={form.expirationDate}
+                onChange={handleChange}
+                style={styles.inputBox}
+              />
 
-            <button type="submit" style={styles.submitButton}>Create New Key</button>
+              <label style={styles.label}>Scopes</label>
+              <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
+                {Object.keys(form.scopes).map((scope) => (
+                  <label
+                    key={scope}
+                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "white" }}
+                  >
+                    <input
+                      type="checkbox"
+                      name={scope}
+                      checked={form.scopes[scope]}
+                      onChange={handleChange}
+                    />
+                    {scope}
+                  </label>
+                ))}
+              </div>
+
+              <label style={styles.label}>Note</label>
+              <textarea
+                name="note"
+                rows={3}
+                value={form.note}
+                onChange={handleChange}
+                style={{ ...styles.inputBox, resize: "vertical" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-start", gap: 12 }}>
+              <button
+                type="button"
+                onClick={() => navigate("/api-keys")}
+                style={{ ...styles.submitButton, backgroundColor: "#64748b" }}
+              >
+                Cancel
+              </button>
+              <button type="submit" style={styles.submitButton}>Create API Key</button>
+            </div>
           </form>
         </div>
       </div>
@@ -103,32 +169,12 @@ const styles = {
     backgroundColor: "#003d80",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
-  sidebar: {
-    flexShrink: 0,
-    width: 180,
-    backgroundColor: "#ffffff",
-    padding: "20px 12px",
-  },
-  logo: {
-    width: 140,
-    marginBottom: 40,
-  },
-  navItem: (active) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "10px 0",
-    fontSize: 15,
-    cursor: "pointer",
-    color: active ? "#ffffff" : "#000000",
-    backgroundColor: active ? "#003d80" : "transparent",
-    borderRadius: 6,
-    paddingLeft: 12,
-    marginBottom: 6,
-  }),
   content: {
     flex: 1,
     backgroundColor: "#003d80",
+    padding: "30px",
+    flexDirection: "column",
+    overflowX: "hidden",
     position: "relative",
   },
   topbar: {
@@ -184,50 +230,40 @@ const styles = {
     fontSize: 14,
   },
   formContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "40px 30px",
-  },
-  title: {
+    paddingTop: 32,
+    paddingLeft: 30,
+    paddingRight: 30,
     color: "white",
-    fontSize: 22,
+  },
+  sectionTitle: {
+    fontSize: 26,
     fontWeight: "bold",
     marginBottom: 20,
-    alignSelf: "flex-start",
-    maxWidth: 480,
-    width: "100%",
   },
-  form: {
-    backgroundColor: "white",
-    padding: "32px 24px",
-    borderRadius: 12,
-    width: "100%",
-    maxWidth: 500,
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
+  sectionGroup: {
+    marginBottom: 32,
+    maxWidth: 600,
   },
   label: {
-    fontWeight: "bold",
+    fontWeight: "600",
     fontSize: 14,
+    marginTop: 10,
+    display: "block",
   },
   inputBox: {
-    border: "1px solid #ccc",
+    border: "1px solid #cbd5e1",
     borderRadius: 6,
-    padding: "8px 12px",
+    padding: "10px 14px",
     fontSize: 14,
-    width: "95%",           
-    alignSelf: "center",    
+    width: "100%",
     boxSizing: "border-box",
+    marginTop: 6,
   },
   submitButton: {
-    marginTop: 12,
-    backgroundColor: "#1d4ed8",
-    color: "#fff",
+    backgroundColor: "#2563eb",
+    color: "white",
     fontWeight: "bold",
-    padding: "10px",
+    padding: "10px 20px",
     border: "none",
     borderRadius: 6,
     cursor: "pointer",
@@ -241,6 +277,5 @@ const styles = {
     cursor: "pointer",
     fontSize: 14,
     marginBottom: 20,
-    alignSelf: "flex-start",
   },
 };

@@ -5,31 +5,44 @@ import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
 import Sidebar from "./SideBar";
 
-export default function AdminEdit() {
+export default function EditApiKey() {
   const navigate = useNavigate();
   const [showNoti, setShowNoti] = useState(false);
+
   const [form, setForm] = useState({
-    name: "Emma Johnson",
-    email: "emma.j@example.com",
-    phone: "081-234-5678",
-    role: "Administrator",
-    status: "Active"
+    name: "Partner Key v2",
+    status: "Active",
+    expirationDate: "2025-12-31",
+    scopes: {
+      issue_license: true,
+      verify_license: true,
+      revoke_license: false,
+    },
+    note: "ใช้เฉพาะระบบ Client A เท่านั้น",
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, checked } = e.target;
+    if (name in form.scopes) {
+      setForm((prev) => ({
+        ...prev,
+        scopes: { ...prev.scopes, [name]: checked },
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Admin updated:", form);
-    navigate("/admin-users");
+    console.log("Updated API Key:", form);
+    navigate("/api-keys");
   };
 
   return (
     <div style={styles.container}>
       <Sidebar />
+
       <div style={styles.content}>
         <div style={styles.topbar}>
           <div style={styles.searchBox}>
@@ -53,17 +66,15 @@ export default function AdminEdit() {
         )}
 
         <div style={styles.formContainer}>
-          <button onClick={() => navigate("/admin-users")} style={styles.backButton}>
-            ← Back to Admin Users
+          <button onClick={() => navigate("/api-keys")} style={styles.backButton}>
+            ← Back to API Keys
           </button>
 
-          <h2 style={styles.sectionTitle}>Edit Admin User</h2>
+          <h2 style={styles.sectionTitle}>Edit API Key</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.sectionGroup}>
-              <h3 style={styles.subSection}>User Information</h3>
-
-              <label style={styles.label}>Name</label>
+              <label style={styles.label}>Name *</label>
               <input
                 name="name"
                 value={form.name}
@@ -72,47 +83,77 @@ export default function AdminEdit() {
                 required
               />
 
-              <label style={styles.label}>Email</label>
+          <label style={styles.label}>Status</label>
+          <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
+            {["Active", "Revoked","Expired"].map((option) => (
+              <label
+                key={option}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 14,
+                  color: "white",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="status"
+                  value={option}
+                  checked={form.status === option}
+                  onChange={handleChange}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+
+              <label style={styles.label}>Expiration Date</label>
               <input
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                style={styles.inputBox}
-                required
-              />
-              <label style={styles.label}>Phone</label>
-              <input
-                name="phone"
-                value={form.phone}
+                type="date"
+                name="expirationDate"
+                value={form.expirationDate}
                 onChange={handleChange}
                 style={styles.inputBox}
               />
 
-              <label style={styles.label}>Role</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                style={styles.inputBox}
-              >
-                <option>Administrator</option>
-                <option>License Manager</option>
-                <option>Editor</option>
-                <option>Viewer</option>
-              </select>
+              <label style={styles.label}>Scopes</label>
               <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
+                {Object.keys(form.scopes).map((scope) => (
+                  <label
+                    key={scope}
+                    style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "white" }}
+                  >
+                    <input
+                      type="checkbox"
+                      name={scope}
+                      checked={form.scopes[scope]}
+                      onChange={handleChange}
+                    />
+                    {scope}
+                  </label>
+                ))}
               </div>
+
+              <label style={styles.label}>Note</label>
+              <textarea
+                name="note"
+                rows={3}
+                value={form.note}
+                onChange={handleChange}
+                style={{ ...styles.inputBox, resize: "vertical" }}
+              />
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-start", gap: 12 }}>
-              <button type="submit" style={styles.submitButton}>Save Changes</button>
               <button
                 type="button"
-                onClick={() => navigate("/admin-users")}
+                onClick={() => navigate("/api-keys")}
                 style={{ ...styles.submitButton, backgroundColor: "#64748b" }}
               >
                 Cancel
               </button>
+              <button type="submit" style={styles.submitButton}>Save Changes</button>
             </div>
           </form>
         </div>
@@ -202,12 +243,6 @@ const styles = {
   sectionGroup: {
     marginBottom: 32,
     maxWidth: 600,
-  },
-  subSection: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-    color: "#ffffff",
   },
   label: {
     fontWeight: "600",

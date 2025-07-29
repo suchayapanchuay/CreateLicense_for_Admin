@@ -27,6 +27,13 @@
 .App-link {
   color: #61dafb;
 }
+.react-datepicker__input-container input {
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: #1e3a8a;
+  font-size: 14px;
+}
 
 @keyframes App-logo-spin {
   from {

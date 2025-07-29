@@ -1,15 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate, } from "react-router-dom";
-import { FiSearch,
-} from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
 import Sidebar from "./SideBar";
-
-const apikeys = [
-  { id: 1,name: "Partner API", key: "Partner API", date: "2025-12-11", status: "Active" },
-  { id: 2,name: "Internal Tool", key: "Internal Tool", date: "2025-03-15", status: "Inactive" },
-];
 
 const styles = {
   container: {
@@ -18,17 +12,6 @@ const styles = {
     backgroundColor: "#003d80",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
-  sidebar: {
-    flexShrink: 0,
-    width: 180,
-    backgroundColor: "#ffffff",
-    padding: "20px 12px",
-  },
-  logo: {
-    width: 160,
-    marginBottom: 40,
-  },
-  
   content: {
     flex: 1,
     backgroundColor: "#003d80",
@@ -84,7 +67,7 @@ const styles = {
     zIndex: 1000,
     maxHeight: 400,
     overflowY: "auto",
-    border: "1px solid #94a3b8"
+    border: "1px solid #94a3b8",
   },
   notiHeader: {
     display: "flex",
@@ -104,13 +87,14 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     padding: "20px 30px",
-    gap: 10
+    gap: 10,
   },
   dropdown: {
     padding: "8px 12px",
     borderRadius: 6,
     border: "1px solid #ccc",
     fontSize: 14,
+    alignSelf: "flex-start",
   },
   addKeyButton: {
     backgroundColor: "#0284c7",
@@ -143,12 +127,43 @@ const styles = {
 
 export default function Apikeys() {
   const [showNoti, setShowNoti] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("All");
   const navigate = useNavigate();
 
+  const [apikeys, setApikeys] = useState([
+    {
+      id: 1,
+      name: "Partner API",
+      key: "sk_live_73nc...mX4",
+      client: "Partner Co.",
+      status: "Active",
+      createdAt: "2025-07-01",
+      expiresAt: "2025-12-31",
+    },
+    {
+      id: 2,
+      name: "Internal Tool",
+      key: "sk_int_12ab...z8F",
+      client: "Internal",
+      status: "Revoked",
+      createdAt: "2025-03-01",
+      expiresAt: "2025-06-01",
+    },
+  ]);
+
+  const toggleStatus = (id) => {
+    setApikeys(prev =>
+      prev.map(key =>
+        key.id === id
+          ? { ...key, status: key.status === "Active" ? "Revoked" : "Active" }
+          : key
+      )
+    );
+  };
 
   return (
     <div style={styles.container}>
-      <Sidebar/>
+      <Sidebar />
 
       <div style={styles.content}>
         <div style={styles.topbar}>
@@ -177,44 +192,123 @@ export default function Apikeys() {
         </div>
 
         <div style={styles.keyControls}>
+          <select
+            style={styles.dropdown}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option>All</option>
+            <option>Active</option>
+            <option>Revoked</option>
+            <option>Expired</option>
+          </select>
           <button
             style={styles.addKeyButton}
             onClick={() => navigate("/api-keys/add")}
           >
-            + Create New Key
+            + New API Key
           </button>
         </div>
 
         <table style={styles.table}>
           <thead>
-            <tr>
-              <th style={styles.th}>Name</th>
-              <th style={styles.th}>Key</th>
-              <th style={styles.th}>Create Date</th>
-              <th style={styles.th}>Status</th>
-            </tr>
+              <tr>
+                <th style={styles.th}>Name</th>
+                <th style={styles.th}>API Key</th>
+                <th style={styles.th}>Client</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Created At</th>
+                <th style={styles.th}>Expires At</th>
+                <th style={styles.th}>Actions</th>
+              </tr>
           </thead>
           <tbody>
-            {apikeys.map((key, index) => (
-              <tr key={index}>
-                <td style={styles.td}>{key.name}</td>
-                <td style={styles.td}>{key.key}</td>
-                <td style={styles.td}>{key.date}</td>
-                <td style={styles.td}>
-                  <span style={{
-                    backgroundColor: key.status === "Active" ? "#bbf7d0" : "#cbd5e1",
-                    color: "#000",
-                    padding: "2px 8px",
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: "bold"
-                  }}>
-                    {key.status}
-                  </span>
+            {apikeys
+              .filter(key => {
+                if (statusFilter === "All") return true;
+                return key.status === statusFilter;
+              })
+              .map((key, index) => (
+                <tr key={index}>
+                  <td style={styles.td}>{key.name}</td>
+                  <td style={styles.td}>{key.key}</td>
+                  <td style={styles.td}>{key.client}</td>
+                  <td style={styles.td}>
+                    <span
+                      onClick={() => toggleStatus(key.id)}
+                      style={{
+                        backgroundColor: key.status === "Active" ? "#bbf7d0" : "#fecaca",
+                        color: "#000",
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontWeight: "bold",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {key.status}
+                    </span>
+                  </td>
+                  <td style={styles.td}>{key.createdAt}</td>
+                  <td style={styles.td}>{key.expiresAt}</td>
+                  <td style={styles.td}>
+                  {key.status === "Revoked" ? (
+                    <span
+                      style={{
+                        color: "white",
+                        cursor: "pointer",
+                        backgroundColor: "#6b7280",
+                        marginRight: 12,
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "8px 10px",
+                        fontWeight: 500,
+                        fontSize: 12,
+                      }}
+                      onClick={() => navigate(`/api-keys/view-revoke/${key.id}`)}
+                    >
+                      View
+                    </span>
+                  ) : (
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: "#004185",
+                          color: "white",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "8px 10px",
+                          fontWeight: 500,
+                          fontSize: 12,
+                        }}
+                        onClick={() => navigate(`/api-keys/edit/${key.id}`)}
+                      >
+                        Edit
+                      </span>
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: "#dc2626",
+                          color: "white",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "8px 10px",
+                          fontWeight: 500,
+                          fontSize: 12,
+                        }}
+                        onClick={() => navigate(`/api-keys/revoke/${key.id}`)}
+                      >
+                        Revoke
+                      </span>
+                    </div>
+                  )}
                 </td>
-              </tr>
-            ))}
+
+                </tr>
+              ))}
           </tbody>
+
         </table>
       </div>
     </div>

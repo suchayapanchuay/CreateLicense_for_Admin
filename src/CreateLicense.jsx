@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-   FiSearch, FiMoreHorizontal,
+   FiSearch,
 } from "react-icons/fi";
 
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 
 import Sidebar from "./SideBar";
 
@@ -193,20 +194,29 @@ const styles = {
     borderBottom: "1px solid #f1f5f9",
     fontSize: 14,
     color: "#000"
-  }
-
+  },
+  backButton: {
+    backgroundColor: "#1e40af",
+    color: "#ffffff",
+    padding: "6px 14px",
+    borderRadius: 6,
+    border: "none",
+    cursor: "pointer",
+    fontSize: 14,
+    marginBottom: 20,
+  },
 };
 
 
 export default function CreateLicense() {
   const [onlineCheckin, setOnlineCheckin] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState(null);
   const [showNoti, setShowNoti] = useState(false);
+  const [selectedSource, setSelectedSource] = useState("");
+  const sourceOptions = ["Direct Purchase", "Reseller", "Internal License", "Trial Campaign"];
   const menuRef = useRef(null);
   const notiRef = useRef();
+  const navigate = useNavigate();
 
-  const toggleMenu = () => setMenuOpen((prev) => !prev);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -235,7 +245,6 @@ export default function CreateLicense() {
   return (
     <div style={styles.container}>
       <Sidebar/>
-
       <div style={styles.content}>
         <div style={styles.topbar}>
           <div style={styles.searchBox}>
@@ -257,8 +266,10 @@ export default function CreateLicense() {
               <div key={idx} style={styles.notiItem}>{msg}</div>
             ))}
           </div>
-        )}
-
+        )}   
+        <button onClick={() => navigate("/client")} style={styles.backButton}>
+        ← Back to Clients
+      </button>
         <h2 style={styles.title}>Create License</h2>
 
         <div style={styles.sectionTitle}>Select Client & Product</div>
@@ -289,9 +300,7 @@ export default function CreateLicense() {
               ))}
             </select>
           </div>
-        </div>
-
-        <div>
+          <div>
           <label style={styles.label}>Version</label>
           <select
             value={selectedVersion}
@@ -303,6 +312,20 @@ export default function CreateLicense() {
               <option key={version} value={version}>{version}</option>
             ))}
           </select>
+        </div>
+        <div>
+        <label style={styles.label}>License Source</label>
+        <select
+          value={selectedSource}
+          onChange={(e) => setSelectedSource(e.target.value)}
+          style={styles.inputField}
+        >
+          <option value="">-- Select Source --</option>
+          {sourceOptions.map((src) => (
+            <option key={src} value={src}>{src}</option>
+          ))}
+        </select>
+      </div>
         </div>
 
         <div style={styles.checkboxRow}>
@@ -348,38 +371,6 @@ export default function CreateLicense() {
           <button style={{ ...styles.button, backgroundColor: "#3b82f6", color: "white" }}>
             Generate License
           </button>
-          <button style={{ ...styles.button, backgroundColor: "#ffffff", color: "#000000" }}>
-            Download
-          </button>
-          <div style={styles.menuButtonWrapper}>
-            <button
-              onClick={toggleMenu}
-              style={{ ...styles.button, backgroundColor: "#ffffff", color: "#000000" }}
-            >
-              <FiMoreHorizontal />
-            </button>
-            {menuOpen && (
-              <div style={styles.dropdownMenu}>
-                {["Send to Client", "Save Draft"].map((label) => (
-                  <div
-                    key={label}
-                    onClick={() => {
-                      alert(label);
-                      setMenuOpen(false);
-                    }}
-                    onMouseEnter={() => setHoveredItem(label)}
-                    onMouseLeave={() => setHoveredItem(null)}
-                    style={{
-                      ...styles.dropdownItem,
-                      backgroundColor: hoveredItem === label ? "#b9b9b9ff" : "#fff",
-                    }}
-                  >
-                    {label}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

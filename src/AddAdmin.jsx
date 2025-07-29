@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {FiSearch
-} from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
 import Sidebar from "./SideBar";
@@ -9,13 +8,12 @@ import Sidebar from "./SideBar";
 export default function AddAdmin() {
   const navigate = useNavigate();
   const [showNoti, setShowNoti] = useState(false);
-
   const [form, setForm] = useState({
     name: "",
     email: "",
-    role: "",
-    status: ""
-    
+    phone: "",
+    role: "Administrator",
+    status: "Active",
   });
 
   const handleChange = (e) => {
@@ -25,14 +23,13 @@ export default function AddAdmin() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Admin invited:", form);
+    console.log("Admin added:", form);
     navigate("/admin-users");
   };
 
   return (
     <div style={styles.container}>
-      <Sidebar/>
-
+      <Sidebar />
       <div style={styles.content}>
         <div style={styles.topbar}>
           <div style={styles.searchBox}>
@@ -57,54 +54,55 @@ export default function AddAdmin() {
 
         <div style={styles.formContainer}>
           <button onClick={() => navigate("/admin-users")} style={styles.backButton}>
-            ← Back to Admin Users & Roles
+            ← Back to Admin Users
           </button>
 
-          <h2 style={styles.title}>Invite Admin</h2>
+          <h2 style={styles.sectionTitle}>Invite Admin</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>Name *</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              style={styles.inputBox}
-              required
-            />
+            <div style={styles.sectionGroup}>
+              <h3 style={styles.subSection}>User Information</h3>
 
-            <label style={styles.label}>Email</label>
-            <input
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              style={styles.inputBox}
-            />
+              <label style={styles.label}>Name</label>
+              <input name="name" value={form.name} onChange={handleChange} style={styles.inputBox} required />
 
-            <label style={styles.label}>Role</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              style={styles.inputBox}
-            >
-              <option>Administrator</option>
-              <option>License Manager</option>
-              <option>Editor</option>
-              <option>Viewer</option>
-            </select>
+              <label style={styles.label}>Email</label>
+              <input name="email" value={form.email} onChange={handleChange} style={styles.inputBox} required />
 
-            <label style={styles.label}>Status</label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              style={styles.inputBox}
-            >
-              <option>Active</option>
-              <option>Inactive</option>
-            </select>
+              <label style={styles.label}>Phone</label>
+              <input name="phone" value={form.phone} onChange={handleChange} style={styles.inputBox} />
 
-            <button type="submit" style={styles.submitButton}>Invite</button>
+              <label style={styles.label}>Role</label>
+              <select name="role" value={form.role} onChange={handleChange} style={styles.inputBox}>
+                <option>Administrator</option>
+                <option>License Manager</option>
+                <option>Editor</option>
+                <option>Viewer</option>
+              </select>
+
+              <label style={styles.label}>Status</label>
+              <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "white" }}>
+                  <input type="radio" name="status" value="Active" checked={form.status === "Active"} onChange={handleChange} />
+                  Active
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "white" }}>
+                  <input type="radio" name="status" value="Inactive" checked={form.status === "Inactive"} onChange={handleChange} />
+                  Inactive
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-start", gap: 12 }}>
+              <button type="submit" style={styles.submitButton}>Invite</button>
+              <button
+                type="button"
+                onClick={() => navigate("/admin-users")}
+                style={{ ...styles.submitButton, backgroundColor: "#64748b" }}
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -119,32 +117,12 @@ const styles = {
     backgroundColor: "#003d80",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
-  sidebar: {
-    flexShrink: 0,
-    width: 180,
-    backgroundColor: "#ffffff",
-    padding: "20px 12px",
-  },
-  logo: {
-    width: 140,
-    marginBottom: 40,
-  },
-  navItem: (active) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "10px 0",
-    fontSize: 15,
-    cursor: "pointer",
-    color: active ? "#ffffff" : "#000000",
-    backgroundColor: active ? "#003d80" : "transparent",
-    borderRadius: 6,
-    paddingLeft: 12,
-    marginBottom: 6,
-  }),
   content: {
     flex: 1,
     backgroundColor: "#003d80",
+    padding: "30px",
+    flexDirection: "column",
+    overflowX: "hidden",
     position: "relative",
   },
   topbar: {
@@ -200,50 +178,46 @@ const styles = {
     fontSize: 14,
   },
   formContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "40px 30px",
-  },
-  title: {
+    paddingTop: 32,
+    paddingLeft: 30,
+    paddingRight: 30,
     color: "white",
-    fontSize: 22,
+  },
+  sectionTitle: {
+    fontSize: 26,
     fontWeight: "bold",
     marginBottom: 20,
-    alignSelf: "flex-start",
-    maxWidth: 480,
-    width: "100%",
   },
-  form: {
-    backgroundColor: "white",
-    padding: "32px 24px",
-    borderRadius: 12,
-    width: "100%",
-    maxWidth: 500,
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
+  sectionGroup: {
+    marginBottom: 32,
+    maxWidth: 600,
+  },
+  subSection: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#ffffff",
   },
   label: {
-    fontWeight: "bold",
+    fontWeight: "600",
     fontSize: 14,
+    marginTop: 10,
+    display: "block",
   },
   inputBox: {
-    border: "1px solid #ccc",
+    border: "1px solid #cbd5e1",
     borderRadius: 6,
-    padding: "8px 12px",
+    padding: "10px 14px",
     fontSize: 14,
-    width: "95%",           
-    alignSelf: "center",    
+    width: "100%",
     boxSizing: "border-box",
+    marginTop: 6,
   },
   submitButton: {
-    marginTop: 12,
-    backgroundColor: "#1d4ed8",
-    color: "#fff",
+    backgroundColor: "#2563eb",
+    color: "white",
     fontWeight: "bold",
-    padding: "10px",
+    padding: "10px 20px",
     border: "none",
     borderRadius: 6,
     cursor: "pointer",
@@ -257,6 +231,5 @@ const styles = {
     cursor: "pointer",
     fontSize: 14,
     marginBottom: 20,
-    alignSelf: "flex-start",
   },
 };

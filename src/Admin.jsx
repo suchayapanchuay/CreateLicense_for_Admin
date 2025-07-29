@@ -6,10 +6,10 @@ import { IoClose } from "react-icons/io5";
 import Sidebar from "./SideBar";
 
 const users = [
-    { id: 1, name: "Emma Johnson", email: "emma.j@example.com", role: "Administrator"},
-    { id: 2, name: "Michael Smith", email: "michael.smith@example.com", role: "Editor"},
-    { id: 3, name: "Sarah Brown", email: "sarah.b@example.com", role: "Viewer"},
-    { id: 4, name: "James Wilson", email: "james.wilson@example.com", role: "Viewer"},
+  { id: 1, name: "Emma Johnson", email: "emma.j@example.com", role: "Administrator", phone: "081-234-5678" },
+  { id: 2, name: "Michael Smith", email: "michael.smith@example.com", role: "Editor", phone: "082-345-6789" },
+  { id: 3, name: "Sarah Brown", email: "sarah.b@example.com", role: "Viewer", phone: "083-456-7890" },
+  { id: 4, name: "James Wilson", email: "james.wilson@example.com", role: "Viewer", phone: "084-567-8901" },
 ];
 
 const styles = {
@@ -115,7 +115,7 @@ const styles = {
     },
     userControls: {
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "flex-end",
         padding: "20px 30px",
         gap: 10
     },
@@ -192,7 +192,7 @@ export default function Admin() {
                         style={styles.addUserButton}
                         onClick={() => navigate("/admin-users/add")}
                     >
-                        +Invite Admin
+                        + Invite Admin
                     </button>
                 </div>
 
@@ -201,52 +201,53 @@ export default function Admin() {
                         <tr>
                             <th style={styles.th}>Name</th>
                             <th style={styles.th}>Email</th>
+                            <th style={styles.th}>Phone</th>
                             <th style={styles.th}>Role</th>
                             <th style={styles.th}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map((user, index) => (
-                            <tr key={index}>
-                                <td style={styles.td}>{user.name}</td>
-                                <td style={styles.td}>{user.email}</td>
-                                <td style={styles.td}>{user.role}</td>
-                                <td style={styles.td}>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                        <button
-                                            style={{
-                                                cursor: "pointer",
-                                                backgroundColor: "#004185",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: 4,
-                                                padding: "6px 12px",
-                                                fontWeight: 500,
-                                            
-                                            }}
-                                            onClick={() => navigate(`/admin-users/edit/${user.id}`)}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            style={{
-                                                cursor: "pointer",
-                                                backgroundColor: "#E25A52",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: 4,
-                                                padding: "6px 12px",
-                                                fontWeight: 500,
-                            
-                                            }}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                      {users.map((user, index) => (
+                        <tr key={index}>
+                          <td style={styles.td}>{user.name}</td>
+                          <td style={styles.td}>{user.email}</td>
+                          <td style={styles.td}>{user.phone}</td> {/* เพิ่มบรรทัดนี้ */}
+                          <td style={styles.td}>{user.role}</td>
+                          <td style={styles.td}>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: "#004185",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: 4,
+                                  padding: "6px 12px",
+                                  fontWeight: 500,
+                                }}
+                                onClick={() => navigate(`/admin-users/edit/${user.id}`)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: "#E25A52",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: 4,
+                                  padding: "6px 12px",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
+
                 </table>
             </div>
         </div>

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {FiSearch
-} from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
 import Sidebar from "./SideBar";
@@ -14,6 +13,7 @@ export default function AddClient() {
     companyName: "",
     contactName: "",
     email: "",
+    phone: "",
     estimatedUsers: "0 - 10",
     notes: "",
   });
@@ -31,8 +31,7 @@ export default function AddClient() {
 
   return (
     <div style={styles.container}>
-      <Sidebar/>
-
+      <Sidebar />
       <div style={styles.content}>
         <div style={styles.topbar}>
           <div style={styles.searchBox}>
@@ -60,56 +59,76 @@ export default function AddClient() {
             ← Back to Clients
           </button>
 
-          <h2 style={styles.title}>Add Client</h2>
+          <h2 style={styles.sectionTitle}>Add Client</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>Company Name *</label>
-            <input
-              name="companyName"
-              value={form.companyName}
-              onChange={handleChange}
-              style={styles.inputBox}
-              required
-            />
+            <div style={styles.sectionGroup}>
+              <h3 style={styles.subSection}>Client Information</h3>
 
-            <label style={styles.label}>Contact Name</label>
-            <input
-              name="contactName"
-              value={form.contactName}
-              onChange={handleChange}
-              style={styles.inputBox}
-            />
+              <label style={styles.label}>Company Name *</label>
+              <input
+                name="companyName"
+                value={form.companyName}
+                onChange={handleChange}
+                style={styles.inputBox}
+                required
+              />
 
-            <label style={styles.label}>Email</label>
-            <input
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              style={styles.inputBox}
-            />
+              <label style={styles.label}>Contact Name</label>
+              <input
+                name="contactName"
+                value={form.contactName}
+                onChange={handleChange}
+                style={styles.inputBox}
+              />
 
-            <label style={styles.label}>Estimated Users</label>
-            <select
-              name="estimatedUsers"
-              value={form.estimatedUsers}
-              onChange={handleChange}
-              style={styles.inputBox}
-            >
-              <option>0 - 10</option>
-              <option>11 - 50</option>
-              <option>51 - 100</option>
-              <option>101+</option>
-            </select>
+              <label style={styles.label}>Email</label>
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                style={styles.inputBox}
+              />
 
-            <label style={styles.label}>Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              style={{ ...styles.inputBox, height: 80 }}
-            />
+              <label style={styles.label}>Phone Number</label>
+              <input
+                name="phone"
+                type="tel"
+                value={form.phone}
+                onChange={handleChange}
+                style={styles.inputBox}
+              />
 
-            <button type="submit" style={styles.submitButton}>Add</button>
+              <label style={styles.label}>Estimated Users</label>
+              <select
+                name="estimatedUsers"
+                value={form.estimatedUsers}
+                onChange={handleChange}
+                style={styles.inputBox}
+              >
+                <option>0 - 10</option>
+                <option>11 - 50</option>
+                <option>51 - 100</option>
+                <option>101+</option>
+              </select>
+            </div>
+
+            <div style={styles.sectionGroup}>
+              <h3 style={styles.subSection}>Internal Reference</h3>
+              <label style={styles.label}>Notes</label>
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                style={{ ...styles.inputBox, height: 100 }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-start", gap: 12 }}>
+              <button type="submit" style={styles.submitButton}>Add Client</button>
+              <button type="button" onClick={() => setForm({ companyName: "", contactName: "", email: "", phone: "", estimatedUsers: "0 - 10", notes: "" })} style={{ ...styles.submitButton, backgroundColor: "#64748b" }}>Clear</button>
+            </div>
           </form>
         </div>
       </div>
@@ -124,29 +143,6 @@ const styles = {
     backgroundColor: "#003d80",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   },
-  sidebar: {
-    flexShrink: 0,
-    width: 180,
-    backgroundColor: "#ffffff",
-    padding: "20px 12px",
-  },
-  logo: {
-    width: 160,
-    marginBottom: 40,
-  },
-  navItem: (active) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "10px 0",
-    fontSize: 15,
-    cursor: "pointer",
-    color: active ? "#ffffff" : "#000000",
-    backgroundColor: active ? "#003d80" : "transparent",
-    borderRadius: 6,
-    paddingLeft: 12,
-    marginBottom: 6,
-  }),
   content: {
     flex: 1,
     backgroundColor: "#003d80",
@@ -208,50 +204,46 @@ const styles = {
     fontSize: 14,
   },
   formContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "40px 30px",
-  },
-  title: {
+    paddingTop: 32,
+    paddingLeft: 30,
+    paddingRight: 30,
     color: "white",
-    fontSize: 22,
+  },
+  sectionTitle: {
+    fontSize: 26,
     fontWeight: "bold",
     marginBottom: 20,
-    alignSelf: "flex-start",
-    maxWidth: 480,
-    width: "100%",
   },
-  form: {
-    backgroundColor: "white",
-    padding: "32px 24px",
-    borderRadius: 12,
-    width: "100%",
-    maxWidth: 500,
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
+  sectionGroup: {
+    marginBottom: 32,
+    maxWidth: 600,
+  },
+  subSection: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#ffffff",
   },
   label: {
-    fontWeight: "bold",
+    fontWeight: "600",
     fontSize: 14,
+    marginTop: 10,
+    display: "block",
   },
   inputBox: {
-    border: "1px solid #ccc",
+    border: "1px solid #cbd5e1",
     borderRadius: 6,
-    padding: "8px 12px",
+    padding: "10px 14px",
     fontSize: 14,
-    width: "95%",           
-    alignSelf: "center",    
+    width: "100%",
     boxSizing: "border-box",
+    marginTop: 6,
   },
   submitButton: {
-    marginTop: 12,
-    backgroundColor: "#1d4ed8",
-    color: "#fff",
+    backgroundColor: "#2563eb",
+    color: "white",
     fontWeight: "bold",
-    padding: "10px",
+    padding: "10px 20px",
     border: "none",
     borderRadius: 6,
     cursor: "pointer",
@@ -265,6 +257,5 @@ const styles = {
     cursor: "pointer",
     fontSize: 14,
     marginBottom: 20,
-    alignSelf: "flex-start",
   },
 };
