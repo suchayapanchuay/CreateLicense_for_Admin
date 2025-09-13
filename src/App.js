@@ -12,7 +12,7 @@ import Logs from './Logs';
 import Admin from './Admin';
 import AdminEdit from './AdminEdit';
 import AddAdmin from './AddAdmin';
-import AddApikeys from './AddApikeys';
+import AdminDetail from './AdminDetail';
 import Product from './Product';
 import EditClient from './EditClient';
 import AddProduct from './AddProduct';
@@ -21,6 +21,13 @@ import NewApiKey from './NewApiKey';
 import EditApiKey from './EditApiKey';
 import Revoke from './Revoke' ;
 import ViewRevoke from './ViewRevoke' ;
+import Noti from './Notification' ;
+import ProductDetail from './ProductDetail';
+import LicenseDetail from './LicenseDetail';
+import ApiDetail from './ApiDetail' ;
+import CreateAPI from './CreateAPI' ;
+import CreateEmail from './CreateEmail' ;
+import EditEmail from './EditEmail' ;
 
 function App() {
   return (
@@ -35,8 +42,8 @@ function App() {
         <Route path="/admin-users" element={<Admin />} />
         <Route path="/admin-users/edit/:id" element={<AdminEdit />} />
         <Route path="/admin-users/add" element={<AddAdmin />} />
+        <Route path="/admin-users/:id" element={<AdminDetail />} />
         <Route path="/api-keys" element={<Apikeys />} />
-        <Route path="/api-keys/add" element={<AddApikeys />} />
         <Route path="/email-template" element={<Email/>} />
         <Route path="/logs" element={<Logs />} />
         <Route path="/client/:id/edit" element={<EditClient />} />
@@ -47,6 +54,13 @@ function App() {
         <Route path="/api-keys/edit/:id" element={<EditApiKey />} />
         <Route path="/api-keys/revoke/:id" element={<Revoke />} />
         <Route path="/api-keys/view-revoke/:id" element={<ViewRevoke />} />
+        <Route path="/noti" element={<Noti/>} />
+        <Route path="/product-details/:id" element={<ProductDetail/>} />
+        <Route path="/license" element={<LicenseDetail/>} />
+        <Route path="/api-detail" element={<ApiDetail/>} />
+        <Route path="/create-api" element={<CreateAPI/>} />
+        <Route path="/email-template/create-email" element={<CreateEmail/>} />
+        <Route path="/email-template/edit-email" element={<EditEmail/>} />
       </Routes>
     </Router>
   );

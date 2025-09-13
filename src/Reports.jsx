@@ -1,420 +1,583 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState, forwardRef } from "react";
+import Sidebar from "./SideBar";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, ResponsiveContainer
-} from "recharts";
-import {
-  FiSearch, FiAlertCircle, FiBarChart2, FiClock, FiActivity
+  FiSearch,
+  FiChevronDown,
+  FiDownload,
+  FiPrinter,
+  FiRefreshCcw,
+  FiCalendar,
 } from "react-icons/fi";
+import { IoMdNotificationsOutline } from "react-icons/io";
+import { IoClose } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
+
+/* ---- Charts ---- */
+import {
+  ResponsiveContainer,
+  LineChart as RLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+
+/* ---- Date Picker ---- */
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { IoMdNotificationsOutline } from "react-icons/io";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import Sidebar from "./SideBar";
 
-const styles = {
-  container: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#003d80",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-  },
-  content: {
-    flex: 1,
-    backgroundColor: "#003d80",
-    display: "flex",
-    flexDirection: "column",
-    padding: "30px 24px",
-    overflowX: "hidden",
-    position: "relative",
-  },
-  topbar: {
-    backgroundColor: "#003d80",
-    padding: "12px 20px",
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    gap: 16,
-    color: "white",
-  },
-  searchBox: {
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: "#003d80",
-    border: "1px solid white",
-    borderRadius: 10,
-    padding: "4px 12px",
-    color: "#ffffff",
-  },
-  input: {
-    border: "none",
-    padding: "4px 8px",
-    outline: "none",
-    backgroundColor: "transparent",
-    color: "#ffffff",
-  },
-  header: {
-    padding: "30px 30px 0 30px",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 4,
-  },
-  mainGrid: {
-    padding: 30,
-    flex: 1,
-    display: "flex",
-    alignItems: "start",
-    marginBottom: 40
-  },
-  chartBox: {
-    backgroundColor: "white",
-    padding: 16,
-    borderRadius: 6,
-    border: "1px solid #cbd5e1",
-    aspectRatio: "2 / 1",
-    width: "100%",
-    //maxWidth: 850,
-  },
-  chartTitleBar: {
-    color: "#003d80",
-    padding: "6px 12px",
-    fontWeight: "bold",
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    marginBottom: 20,
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: 20
-  },
-  selectBox: {
-    backgroundColor: "#ffffff",
-    color: "black",
-    border: "none",
-    borderRadius: 4,
-    padding: "4px",
-    fontSize: 13,
-    fontWeight: 500,
-    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)"
-  },
-  boxStyle: {
-    backgroundColor: "white",
-    padding: 16,
-    borderRadius: 12,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-  outlineBtn: {
-    padding: "6px 10px",
-    backgroundColor: "white",
-    border: "1px solid #cbd5e1",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-  linkBtn: {
-    padding: 0,
-    border: "none",
-    background: "none",
-    color: "#3b82f6",
-    cursor: "pointer",
-    fontSize: 14,
-  },
-  logItem: {
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: "#64748b",
-  }
-  
+/* THEME */
+const THEME = {
+  pageBg: "#0B1A2D",
+  stageBg: "#0E1D33",
+  card: "#13253D",
+  border: "rgba(255,255,255,0.12)",
+  text: "rgba(255,255,255,0.92)",
+  textMut: "rgba(255,255,255,0.70)",
+  textFaint: "rgba(255,255,255,0.55)",
+  accent: "#3B82F6",
+  accent2: "#67B3FF",
 };
 
-// Sample data
-const usageData = [
-  { day: 5, usage: 10 },
-  { day: 7, usage: 30 },
-  { day: 10, usage: 25 },
-  { day: 15, usage: 65 },
-  { day: 20, usage: 55 },
-  { day: 24, usage: 10 },
-  { day: 26, usage: 40 },
-  { day: 28, usage: 70 },
-  { day: 30, usage: 140 },
+/* MOCK NOTIFICATIONS */
+const NOTI_ITEMS = [
+  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 15, read: false },
+  { id: 2, type: "purchase", title: "Purchase Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2025", read: true },
 ];
 
-const expiryData = [
-  { range: "0–30 days", value: 10 },
-  { range: "31–90 days", value: 7 },
-  { range: "> 90 days", value: 3 },
-];
+/* STYLES */
+const styles = {
+  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
+  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
 
-const licenseData = [
-  { name: "Jan", value: 130 },
-  { name: "Feb", value: 200 },
-  { name: "Mar", value: 350 },
-  { name: "Apr", value: 500 },
-  { name: "May", value: 600 },
-  { name: "Jun", value: 800 },
-];
+  /* topbar */
+  topbar: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16 },
+  searchBox: { display: "flex", alignItems: "center", gap: 8, border: `1px solid ${THEME.border}`, padding: "6px 10px", borderRadius: 10, minWidth: 220, color: THEME.text },
+  searchInput: { border: "none", outline: "none", background: "transparent", color: THEME.text, width: "100%" },
 
-const trafficData = [
-  { time: "12:00", value: 30 },
-  { time: "12:05", value: 60 },
-  { time: "12:10", value: 35 },
-  { time: "12:15", value: 45 },
-  { time: "12:20", value: 50 },
-];
+  title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 20px" },
+
+  /* filters row */
+  filtersRow: { display: "flex", alignItems: "center", gap: 14, marginBottom: 16 },
+  selectWrap: { position: "relative" },
+  select: {
+    appearance: "none", background: THEME.card, color: THEME.text,
+    border: `1px solid ${THEME.border}`, borderRadius: 10,
+    padding: "10px 40px 10px 12px", fontWeight: 700, minWidth: 160, cursor: "pointer",
+  },
+  caret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: THEME.textFaint, pointerEvents: "none" },
+  actBtn: { display: "flex", alignItems: "center", gap: 8, border: `1px solid ${THEME.border}`, background: "#1B365A", color: THEME.text, padding: "10px 14px", borderRadius: 10, fontWeight: 800, cursor: "pointer" },
+  actBtnDisabled: { opacity: 0.6, pointerEvents: "none" },
+
+  /* stat cards */
+  statsRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 },
+  statCard: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 16 },
+  statTitle: { color: THEME.textMut, fontWeight: 800, marginBottom: 10 },
+  statNum: { fontSize: 48, fontWeight: 900, color: THEME.text, lineHeight: 1 },
+  statNumWarn: { fontSize: 48, fontWeight: 900, color: "#FF6969", lineHeight: 1 },
+
+  /* grid for charts */
+  gridCharts: { display: "grid", gridTemplateColumns: "2fr 1.1fr", gap: 16, marginBottom: 16 },
+
+  card: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 16 },
+  cardHead: { fontWeight: 900, color: THEME.text, marginBottom: 12 },
+
+  /* table */
+  tableWrap: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: "hidden" },
+  tableHeader: { background: "rgba(255,255,255,0.06)", display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", padding: "12px 16px", fontWeight: 800, color: THEME.text },
+  tableRow: { display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", padding: "14px 16px", borderTop: `1px solid ${THEME.border}`, color: THEME.text },
+
+  /* progress bars */
+  barRow: { display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", marginBottom: 12 },
+  bar: { height: 10, borderRadius: 99, background: "rgba(255,255,255,0.08)", overflow: "hidden" },
+  barFill: (w) => ({ height: "100%", width: `${w}%`, background: THEME.accent2 }),
+
+  /* donut legend */
+  legendItem: { display: "flex", alignItems: "center", gap: 8, color: THEME.text, fontWeight: 600 },
+  dot: (c) => ({ width: 10, height: 10, borderRadius: 999, background: c }),
+
+  /* Notifications panel */
+  notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
+  notiHead: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${THEME.border}`, fontWeight: 900, fontSize: 22 },
+  notiSelectWrap: { position: "relative", display: "inline-block" },
+  notiSelect: { appearance: "none", background: "#183154", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 14px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
+  selectCaret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: THEME.textMut, fontSize: 18 },
+  notiClose: { cursor: "pointer" },
+  notiList: { maxHeight: 560, overflowY: "auto" },
+  notiItem: { padding: "16px", borderBottom: `1px solid ${THEME.border}` },
+  notiBadge: { fontSize: 13, color: THEME.textMut, marginBottom: 6 },
+  notiClient: { fontSize: 22, fontWeight: 800, marginBottom: 4, color: THEME.text },
+  notiMetaRow: { display: "flex", justifyContent: "flex-start", gap: 6, color: THEME.textFaint, fontSize: 14, marginTop: 8 },
+  notiBtn: { marginTop: 10, border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, padding: "8px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer" },
+  notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer" },
+};
+
+/* Donut chart (SVG) */
+function Donut({ valueA = 20, valueB = 26, valueC = 52, offset = -12 }) {
+  const r = 56, cx = 100, cy = 100;
+  const circ = 2 * Math.PI * r;
+  const seg = (p) => `${(p / 100) * circ} ${circ}`
+
+  return (
+    <div style={{ display: "flex", gap: 16, marginLeft: offset }}>
+      <svg width={200} height={200} viewBox="0 0 200 200">
+        <circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.12)" strokeWidth="20" fill="none" />
+        <circle cx={cx} cy={cy} r={r} stroke="#9DBBFF" strokeWidth="20" fill="none" strokeDasharray={seg(valueA)} transform={`rotate(-90 ${cx} ${cy})`} />
+        <circle cx={cx} cy={cy} r={r} stroke="#6CA0FF" strokeWidth="20" fill="none" strokeDasharray={seg(valueB)} transform={`rotate(${(360 * valueA) / 100 - 90} ${cx} ${cy})`} />
+        <circle cx={cx} cy={cy} r={r} stroke="#2F6BD2" strokeWidth="20" fill="none" strokeDasharray={seg(valueC)} transform={`rotate(${(360 * (valueA + valueB)) / 100 - 90} ${cx} ${cy})`} />
+        <circle cx={cx} cy={cy} r={36} fill="#0D2039" />
+        <text x={cx} y={cy + 6} textAnchor="middle" fill={THEME.text} fontWeight="800" fontSize="20">{valueA}%</text>
+      </svg>
+
+      <div style={{ display: "grid", gap: 10, alignContent: "center" }}>
+        <div style={styles.legendItem}><span style={styles.dot("#9DBBFF")} /> 0 - 7 days <span style={{ marginLeft: 10, color: THEME.textMut }}>20 %</span></div>
+        <div style={styles.legendItem}><span style={styles.dot("#6CA0FF")} /> 8 - 30 days <span style={{ marginLeft: 10, color: THEME.textMut }}>26 %</span></div>
+        <div style={styles.legendItem}><span style={styles.dot("#2F6BD2")} /> &gt; 30 days <span style={{ marginLeft: 10, color: THEME.textMut }}>52 %</span></div>
+      </div>
+    </div>
+  );
+}
+
+/* Custom input for DatePicker */
+const RangeButton = forwardRef(({ value, onClick }, ref) => (
+  <button
+    ref={ref}
+    onClick={onClick}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      background: THEME.card,
+      color: THEME.text,
+      border: `1px solid ${THEME.border}`,
+      borderRadius: 10,
+      padding: "10px 14px",
+      fontWeight: 800,
+      cursor: "pointer",
+      minWidth: 180,
+      justifyContent: "space-between",
+    }}
+  >
+    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <FiCalendar />
+      {value || "calendar"}
+    </span>
+    <FiChevronDown style={{ color: THEME.textFaint }} />
+  </button>
+));
+
+/* Helper */
+const fmt = (d) =>
+  d
+    ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`
+    : "";
 
 export default function Reports() {
-  const [selectedTab, setSelectedTab] = useState("usage");
-  const [range] = useState(30);
-  const [rangeBar] = useState(0);
+  const navigate = useNavigate();
+  const stageRef = useRef(null);
 
-  const chartRef = useRef(null);
-  const barRef = useRef(null);
-  const healthRef = useRef(null);
-  const exButtonRefChart = useRef(null);
-  const exButtonRefBar = useRef(null);
-  const exButtonRefHealth = useRef(null);
-  const [dateRange, setDateRange] = useState([null, null]);
-  const [startDate, endDate] = dateRange;
+  /* notifications */
+  const [showNoti, setShowNoti] = useState(false);
+  const [notiFilter, setNotiFilter] = useState("all");
+  const notiRef = useRef(null);
+  useEffect(() => {
+    const onClick = (e) => { if (notiRef.current && !notiRef.current.contains(e.target)) setShowNoti(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+  const filteredNoti = NOTI_ITEMS.filter((n) => {
+    if (notiFilter === "all") return true;
+    if (notiFilter === "unread") return !n.read;
+    if (notiFilter === "trial") return n.type === "trial";
+    if (notiFilter === "purchase") return n.type === "purchase";
+    return true;
+  });
 
+  /* filters */
+  const [range, setRange] = useState("7");
+  const [licenseType, setLicenseType] = useState("all");
 
-  const filteredData = usageData.filter((item) => item.day >= (30 - range + 1));
-  const filteredDataBar = rangeBar === 0 ? expiryData : expiryData.filter(item => item.value === rangeBar);
+  // calendar (date range)
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const onDateChange = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+  };
+  const rangeLabel =
+    startDate && endDate ? `${fmt(startDate)} - ${fmt(endDate)}` : startDate ? `${fmt(startDate)} - …` : "";
 
-  const exportToPDF = (ref, buttonRef, filename) => {
-    const input = ref.current;
-    const button = buttonRef.current;
-    if (!input || !button) return;
-    button.style.visibility = "hidden";
-    html2canvas(input, { scale: 2 }).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "pt",
-        format: [canvas.width, canvas.height],
-      });
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(filename);
-      button.style.visibility = "visible";
-    });
+  /* ----------- DATA (state) ----------- */
+  const [series, setSeries] = useState({
+    active: [120, 350, 680, 640, 700, 820, 780],
+    trial: [120, 200, 300, 300, 420, 520, 620],
+  });
+
+  const usageData = useMemo(
+    () =>
+      Array.from({ length: Math.max(series.active.length, series.trial.length) }, (_, i) => ({
+        x: i * 5,
+        active: series.active[i] ?? null,
+        trial: series.trial[i] ?? null,
+      })),
+    [series]
+  );
+
+  const [table, setTable] = useState([
+    { date: "20/08/2025", new: 3, expired: 1, revoked: 3 },
+    { date: "21/08/2025", new: 2, expired: 0, revoked: 2 },
+    { date: "22/08/2025", new: 4, expired: 2, revoked: 4 },
+  ]);
+
+  const [topClients] = useState([
+    { name: "Client A", pct: 68 },
+    { name: "Client B", pct: 42 },
+    { name: "Client C", pct: 80 },
+  ]);
+
+  const [renewing, setRenewing] = useState(false);
+
+  /* ----------- ACTIONS: EXPORT / PRINT / RENEW ----------- */
+  const handleExport = () => {
+    const lines = [];
+
+    // Section 1: Usage
+    lines.push("License Usage Over Time");
+    lines.push("x,active,trial");
+    usageData.forEach((r) => lines.push([r.x, r.active ?? "", r.trial ?? ""].join(",")));
+    lines.push("");
+
+    // Section 2: Daily table
+    lines.push("Daily Summary");
+    lines.push("date,new,expired,revoked");
+    table.forEach((r) => lines.push([r.date, r.new, r.expired, r.revoked].join(",")));
+    lines.push("");
+
+    // Section 3: Top clients
+    lines.push("Top Client With Most License");
+    lines.push("name,pct");
+    topClients.forEach((c) => lines.push([c.name, c.pct].join(",")));
+
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    a.href = url;
+    a.download = `reports-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    const w = window.open("", "PRINT", "height=800,width=1100");
+    if (!w) return;
+    const html = `
+      <html>
+        <head>
+          <title>Reports</title>
+          <style>
+            body { background: ${THEME.pageBg}; color: ${THEME.text}; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+            .stage { background: ${THEME.stageBg}; color: ${THEME.text}; border: 1px solid ${THEME.border}; border-radius: 16px; padding: 24px; }
+            .hide-print { display: none; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="stage">${stageRef.current?.innerHTML || ""}</div>
+        </body>
+      </html>
+    `;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+    w.close();
+  };
+
+  const handleRenew = () => {
+    if (renewing) return;
+    setRenewing(true);
+
+    // mock transform: randomize trends a bit
+    const jitter = () => Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(100 + i * 90 + (Math.random() - 0.5) * 120)));
+    const jitter2 = () => Array.from({ length: 7 }, (_, i) => Math.max(0, Math.round(80 + i * 70 + (Math.random() - 0.5) * 100)));
+
+    setTimeout(() => {
+      setSeries({ active: jitter(), trial: jitter2() });
+      setTable((prev) =>
+        prev.map((r) => ({
+          ...r,
+          new: Math.max(0, r.new + Math.round((Math.random() - 0.5) * 4)),
+          expired: Math.max(0, r.expired + Math.round((Math.random() - 0.5) * 2)),
+          revoked: Math.max(0, r.revoked + Math.round((Math.random() - 0.5) * 3)),
+        }))
+      );
+      setRenewing(false);
+    }, 800);
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.root}>
       <Sidebar />
+
       <div style={styles.content}>
-        <div style={styles.topbar}>
-          <div style={styles.searchBox}>
-            <FiSearch color="white" />
-            <input placeholder="search" style={styles.input} />
+        <div style={styles.stage} ref={stageRef}>
+          {/* Topbar */}
+          <div style={styles.topbar}>
+            <div style={styles.searchBox}>
+              <FiSearch />
+              <input placeholder="Search" style={styles.searchInput} />
+            </div>
+            <div onClick={() => setShowNoti((v) => !v)} style={{ cursor: "pointer" }}>
+              <IoMdNotificationsOutline size={24} color={THEME.text} />
+            </div>
           </div>
-          <IoMdNotificationsOutline size={24} color="white" />
-        </div>
 
-        <div style={styles.header}>
+          {/* Notifications Panel */}
+          {showNoti && (
+            <div style={styles.notiPanelWrap} ref={notiRef}>
+              <div style={styles.notiHead}>
+                <span>Notifications ({NOTI_ITEMS.length})</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={styles.notiSelectWrap}>
+                    <select value={notiFilter} onChange={(e) => setNotiFilter(e.target.value)} style={styles.notiSelect}>
+                      <option value="all">All</option>
+                      <option value="unread">Unread</option>
+                      <option value="trial">Trial</option>
+                      <option value="purchase">Purchase</option>
+                    </select>
+                    <FiChevronDown style={styles.selectCaret} />
+                  </div>
+                  <IoClose size={22} onClick={() => setShowNoti(false)} style={styles.notiClose} />
+                </div>
+              </div>
+
+              <div style={styles.notiList}>
+                {filteredNoti.map((n) => (
+                  <div key={n.id} style={styles.notiItem}>
+                    <div style={styles.notiBadge}>{n.title}</div>
+                    <div style={styles.notiClient}>{n.client}</div>
+
+                    <div style={styles.notiMetaRow}>
+                      <span><strong style={{ color: THEME.textFaint }}>Product :</strong> {n.product}</span>
+                      {n.durationDays ? (
+                        <span><strong style={{ color: THEME.textFaint }}>Duration :</strong> {n.durationDays} days</span>
+                      ) : (
+                        <span />
+                      )}
+                    </div>
+                    <div style={{ ...styles.notiMetaRow, marginTop: 6 }}>
+                      <span>
+                        <strong style={{ color: THEME.textFaint }}>Requested :</strong> {n.requested}
+                      </span>
+                      <span />
+                    </div>
+
+                    <button style={styles.notiBtn} onClick={() => navigate("/Noti")}>
+                      View All
+                    </button>
+                  </div>
+                ))}
+                <div style={{ height: 120, borderBottom: `1px solid ${THEME.border}` }} />
+              </div>
+
+              <div style={styles.notiFooter} onClick={() => navigate("/Noti")}>
+                Veiw All
+              </div>
+            </div>
+          )}
+
           <div style={styles.title}>Reports</div>
-        </div>
 
-        <div style={styles.mainGrid}>
-          <div style={{ display: "flex", width: "100%", maxWidth: 900, gap: 20 }}>
-            {/* Tab Menu */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button
-                onClick={() => setSelectedTab("usage")}
-                style={{
-                  backgroundColor: selectedTab === "usage" ? "#003d80" : "#dbeafe",
-                  color: selectedTab === "usage" ? "white" : "#1e3a8a",
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  border: "none",
-                  fontWeight: 600,
-                  textAlign: "left",
-                  width: 160,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10
-                }}
-              >
-                <FiBarChart2 /> License Usage
-              </button>
-              <button
-                onClick={() => setSelectedTab("expired")}
-                style={{
-                  backgroundColor: selectedTab === "expired" ? "#003d80" : "#dbeafe",
-                  color: selectedTab === "expired" ? "white" : "#1e3a8a",
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  border: "none",
-                  fontWeight: 600,
-                  textAlign: "left",
-                  width: 160,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10
-                }}
-              >
-                <FiClock /> License Expired
-              </button>
-              <button
-                onClick={() => setSelectedTab("health")}
-                style={{
-                  backgroundColor: selectedTab === "health" ? "#003d80" : "#dbeafe",
-                  color: selectedTab === "health" ? "white" : "#1e3a8a",
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  border: "none",
-                  fontWeight: 600,
-                  textAlign: "left",
-                  width: 160,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10
-                }}
-              >
-                <FiActivity /> System Health
-              </button>
+          {/* Filters */}
+          <div style={styles.filtersRow}>
+            {/* Calendar (Date Range) */}
+            <DatePicker
+              selectsRange
+              startDate={startDate}
+              endDate={endDate}
+              onChange={onDateChange}
+              isClearable
+              customInput={<RangeButton value={rangeLabel} />}
+              popperPlacement="bottom-start"
+            />
+
+            {/* Last N days */}
+            <div style={styles.selectWrap}>
+              <select value={range} onChange={(e) => setRange(e.target.value)} style={styles.select}>
+                <option >Today</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+              <FiChevronDown style={styles.caret} />
             </div>
 
-            {/* Tab Content */}
-            <div style={{ flex: 1 }}>
-              {selectedTab === "usage" && (
-                <div style={styles.chartBox} ref={chartRef}>
-                  <div style={styles.chartTitleBar}>
-                    <div>License Usage</div>
-                    <div style={{ minWidth: 220,textAlign: "right"  }}>
-                      <DatePicker
-                        selectsRange
-                        startDate={startDate}
-                        endDate={endDate}
-                        onChange={(update) => {
-                          setDateRange(update);
-                        }}
-                        isClearable
-                        placeholderText="Select date range"
-                        wrapperClassName="datePicker"
-                        className="custom-datepicker"
-                        
-                      />
-                    </div>
-                  </div>
-                  <ResponsiveContainer width="100%" minHeight={260}>
-                    <LineChart data={filteredData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="usage" stroke="#003d80" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                  <button ref={exButtonRefChart} onClick={() => exportToPDF(chartRef, exButtonRefChart, "license_usage_chart.pdf")} style={styles.outlineBtn}>Export</button>
-                </div>
-              )}
+            {/* License type */}
+            <div style={styles.selectWrap}>
+              <select value={licenseType} onChange={(e) => setLicenseType(e.target.value)} style={styles.select}>
+                <option value="all">License type</option>
+                <option value="trial">Trial</option>
+                <option value="subscription">Subscription</option>
+                <option value="perpetual">Perpetual</option>
+              </select>
+              <FiChevronDown style={styles.caret} />
+            </div>
 
-              {selectedTab === "expired" && (
-                <div style={styles.chartBox} ref={barRef}>
-                  <div style={styles.chartTitleBar}>
-                    <div>License Expiry</div>
-                    <div style={{ minWidth: 220,textAlign: "right"  }}>
-                      <DatePicker
-                        selectsRange
-                        startDate={startDate}
-                        endDate={endDate}
-                        onChange={(update) => {
-                          setDateRange(update);
-                        }}
-                        isClearable
-                        placeholderText="Select date range"
-                        wrapperClassName="datePicker"
-                        className="custom-datepicker"
-                        
-                      />
-                    </div>
-                  </div>
-                  <ResponsiveContainer width="100%">
-                    <BarChart data={filteredDataBar} barCategoryGap={rangeBar === 0 ? '10%' : '40%'}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="range" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#1e3a8a" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <button ref={exButtonRefBar} onClick={() => exportToPDF(barRef, exButtonRefBar, "license_expiry_chart.pdf")} style={styles.outlineBtn}>Export</button>
-                </div>
-              )}
+            <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+              <button
+                style={{ ...styles.actBtn }}
+                onClick={handleExport}
+                title="Export CSV"
+              >
+                <FiDownload /> Export
+              </button>
 
-              {selectedTab === "health" && (
-                <div style={styles.chartBox} ref={healthRef}>
-                  <div style={styles.chartTitleBar}>System Health</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
-                    {/* Alert */}
-                    <div style={styles.boxStyle}>
-                      <span style={{ fontWeight: "bold" }}>Alert</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FiAlertCircle color="red" />
-                        <span>Database connection lost</span>
-                      </div>
-                      <button style={styles.linkBtn}>View details</button>
-                    </div>
+              <button
+                style={{ ...styles.actBtn }}
+                onClick={handlePrint}
+                title="Print"
+              >
+                <FiPrinter /> Print
+              </button>
 
-                    {/* License Server Status */}
-                    <div style={styles.boxStyle}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontWeight: "bold" }}>License Server Status</span>
-                        <span style={{ color: "green", fontWeight: "bold" }}>● Active</span>
-                      </div>
-                      <button style={styles.outlineBtn}>Ping Server</button>
-                    </div>
-
-                    {/* Active Licenses */}
-                    <div style={styles.boxStyle}>
-                      <div style={{ fontSize: 16, fontWeight: "bold" }}>Total Active Licenses</div>
-                      <div style={{ fontSize: 32, fontWeight: "bold", margin: "10px 0" }}>2,430</div>
-                      <div style={{ width: "100%", height: 150 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={licenseData}>
-                            <XAxis dataKey="name" stroke="#888" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <button ref={exButtonRefHealth} onClick={() => exportToPDF(healthRef, exButtonRefHealth, "health_report.pdf")} style={styles.outlineBtn}>Export Health Report</button>
-                    </div>
-
-                    {/* Traffic */}
-                    <div style={styles.boxStyle}>
-                      <div style={{ fontWeight: "bold", marginBottom: 10 }}>System Load / Traffic</div>
-                      <div style={{ width: "100%", height: 100, display: "flex", gap: 30 }}>
-                        <ResponsiveContainer width="50%" height="100%">
-                          <LineChart data={trafficData}>
-                            <XAxis dataKey="time" />
-                            <YAxis />
-                            <Tooltip />
-                            <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                        <div style={{ color: "gray" }}>5 minute ago</div>
-                      </div>
-                      <div style={styles.logItem}>❌ Error! License key validation failed <br /><span style={styles.timestamp}>5 minutes ago</span></div>
-                      <div style={styles.logItem}>✅ License key generated <br /><span style={styles.timestamp}>32 minutes ago</span></div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <button
+                style={{ ...styles.actBtn, ...(renewing ? styles.actBtnDisabled : {}) }}
+                onClick={handleRenew}
+                title="Renew Data"
+              >
+                <FiRefreshCcw style={renewing ? { animation: "spin .9s linear infinite" } : {}} />
+                {renewing ? "Renewing..." : "Renew Data"}
+              </button>
             </div>
           </div>
+
+          {/* Stat cards */}
+          <div style={styles.statsRow}>
+            <div style={styles.statCard}>
+              <div style={styles.statTitle}>Active Licenses</div>
+              <div style={styles.statNum}>35</div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statTitle}>Expiring 7 days</div>
+              <div style={styles.statNumWarn}>5</div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statTitle}>Trial Licenses</div>
+              <div style={styles.statNum}>19</div>
+            </div>
+            <div style={styles.statCard}>
+              <div style={styles.statTitle}>Rework License</div>
+              <div style={styles.statNum}>10</div>
+            </div>
+          </div>
+
+          {/* Charts Grid */}
+          <div style={styles.gridCharts}>
+            {/* License Usage Over Time */}
+            <div style={styles.card}>
+              <div style={styles.cardHead}>License Usage Over Time</div>
+
+              <div style={{ width: "100%", height: 240 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RLineChart data={usageData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+                    <XAxis dataKey="x" stroke="rgba(255,255,255,0.55)" />
+                    <YAxis stroke="rgba(255,255,255,0.55)" />
+                    <Tooltip
+                      contentStyle={{
+                        background: "#0E1D33",
+                        border: `1px solid ${THEME.border}`,
+                        color: THEME.text,
+                      }}
+                      labelStyle={{ color: THEME.textMut }}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="active" stroke="#67B3FF" strokeWidth={3} dot={false} name="Active" />
+                    <Line type="monotone" dataKey="trial" stroke="rgba(255,255,255,0.6)" strokeDasharray="6 6" dot={false} name="Trial" />
+                  </RLineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Donut */}
+            <div style={styles.card}>
+              <div style={styles.cardHead}>License Expiry</div>
+              <Donut valueA={20} valueB={26} valueC={52} offset={-16} />
+            </div>
+
+          </div>
+
+          {/* Table + Top Clients */}
+          <div style={styles.gridCharts}>
+            <div style={styles.tableWrap}>
+              <div style={styles.tableHeader}>
+                <div>Date</div>
+                <div>New Activate</div>
+                <div>Expired</div>
+                <div>Revoked</div>
+              </div>
+              {table.map((r, i) => (
+                <div key={i} style={styles.tableRow}>
+                  <div>{r.date}</div>
+                  <div>{r.new}</div>
+                  <div>{r.expired}</div>
+                  <div>{r.revoked}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={styles.card}>
+              <div style={styles.cardHead}>Top Client With Most License</div>
+
+              {topClients.map((c) => (
+                <div key={c.name} style={styles.barRow}>
+                  <div style={{ color: THEME.text }}>{c.name}</div>
+                  <div style={{ width: 240 }}>
+                    <div style={styles.bar}>
+                      <div style={styles.barFill(c.pct)} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Dark theme override for react-datepicker + spinner anim */}
+          <style>{`
+            .react-datepicker {
+              background: #0E2240;
+              border: 1px solid ${THEME.border};
+              color: ${THEME.text};
+            }
+            .react-datepicker__header {
+              background-color: #10294a;
+              border-bottom: 1px solid ${THEME.border};
+            }
+            .react-datepicker__current-month,
+            .react-datepicker__day-name {
+              color: ${THEME.text};
+              font-weight: 700;
+            }
+            .react-datepicker__day { color: ${THEME.text}; }
+            .react-datepicker__day--selected,
+            .react-datepicker__day--in-range,
+            .react-datepicker__day--keyboard-selected {
+              background-color: ${THEME.accent};
+            }
+            .react-datepicker__day:hover { background-color: rgba(59,130,246,0.4); }
+
+            @keyframes spin { to { transform: rotate(360deg); } }
+          `}</style>
         </div>
       </div>
     </div>

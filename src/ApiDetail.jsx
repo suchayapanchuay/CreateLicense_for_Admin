@@ -108,19 +108,32 @@ const styles = {
   },
   radioInput: {
     // Hide default radio button
-    position: "absolute",
-    opacity: 0,
-    width: 0,
-    height: 0,
-  },
-  radioDisplay: {
-    display: "inline-block",
+    appearance: "none",
     width: "16px",
     height: "16px",
     borderRadius: "50%",
     border: `2px solid ${THEME.border}`,
     position: "relative",
+    outline: "none",
+    cursor: "pointer",
     flexShrink: 0,
+    
+    // Add custom check mark
+    "&:checked": {
+      backgroundColor: THEME.accent,
+      border: `2px solid ${THEME.accent}`,
+      "&::before": {
+        content: '""',
+        width: "8px",
+        height: "8px",
+        borderRadius: "50%",
+        backgroundColor: "white",
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+      },
+    },
   },
 };
 
@@ -178,22 +191,12 @@ export default function ApiKeysDetail() {
   const handleStatusChange = (e) => {
     setForm({ ...form, status: e.target.value });
   };
-  
-  const handleScopesChange = (e) => {
-    setForm({ ...form, scopes: e.target.value });
-  };
 
-  const handleNameChange = (e) => {
-    setForm({ ...form, name: e.target.value });
-  };
-
-  const handleSave = () => {
-    alert("API Key saved.");
-    console.log("Saving form:", form);
-  };
-
-  const handleCancel = () => {
-    navigate("/setting/api-keys");
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this API key?")) {
+      alert("API key deleted (mock).");
+      navigate("/setting/api-keys");
+    }
   };
 
   return (
@@ -263,9 +266,8 @@ export default function ApiKeysDetail() {
           <div style={styles.breadcrumb}>
             <span style={{ cursor: "pointer" }} onClick={() => navigate("/setting/api-keys")}>Setting / Logs</span>
             &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }} onClick={() => navigate("/setting/api-keys")}>Setting</span>
-            &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }} onClick={() => navigate("/setting/api-keys")}>API Keys</span>
-            &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }}onClick={() => navigate("/setting/api-keys")}>API Keys Detail</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Edit Keys Detail</span>
+            &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }} onClick={() => navigate("/api-keys")}>API Keys</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>API Keys Detail</span>
           </div>
           
           {/* Card */}
@@ -274,12 +276,12 @@ export default function ApiKeysDetail() {
             <div style={{ ...styles.row2, marginBottom: 20 }}>
               <div style={styles.col}>
                 <div style={styles.label}>Name</div>
-                <input value={form.name} onChange={handleNameChange} style={styles.input} />
+                <input value={form.name} readOnly={true} style={styles.input} />
               </div>
               <div style={styles.col}>
                 <div style={styles.label}>Scopes</div>
                 <div style={styles.selectWrap}>
-                  <select value={form.scopes} onChange={handleScopesChange} style={styles.select}>
+                  <select value={form.scopes} style={styles.select} disabled>
                     {SCOPES_OPTIONS.map((scope) => (
                       <option key={scope} value={scope}>{scope}</option>
                     ))}
@@ -301,14 +303,7 @@ export default function ApiKeysDetail() {
                       checked={form.status === "Active"}
                       onChange={handleStatusChange}
                       style={styles.radioInput}
-                    /> 
-                    <span style={{
-                      ...styles.radioDisplay,
-                      ...(form.status === 'Active' && {
-                        backgroundColor: THEME.accent,
-                        border: `2px solid ${THEME.accent}`
-                      })
-                    }}></span> Active
+                    /> Active
                   </label>
                   <label style={styles.radioLabel}>
                     <input
@@ -318,14 +313,7 @@ export default function ApiKeysDetail() {
                       checked={form.status === "Inactive"}
                       onChange={handleStatusChange}
                       style={styles.radioInput}
-                    /> 
-                    <span style={{
-                      ...styles.radioDisplay,
-                      ...(form.status === 'Inactive' && {
-                        backgroundColor: THEME.accent,
-                        border: `2px solid ${THEME.accent}`
-                      })
-                    }}></span> Inactive
+                    /> Inactive
                   </label>
                   <label style={styles.radioLabel}>
                     <input
@@ -335,14 +323,7 @@ export default function ApiKeysDetail() {
                       checked={form.status === "Revoke"}
                       onChange={handleStatusChange}
                       style={styles.radioInput}
-                    /> 
-                    <span style={{
-                      ...styles.radioDisplay,
-                      ...(form.status === 'Revoke' && {
-                        backgroundColor: THEME.accent,
-                        border: `2px solid ${THEME.accent}`
-                      })
-                    }}></span> Revoke
+                    /> Revoke
                   </label>
                 </div>
               </div>
@@ -372,8 +353,8 @@ export default function ApiKeysDetail() {
 
             {/* Actions */}
             <div style={styles.actions}>
-              <button style={{ ...styles.btnPrimary, background: "#3B82F6" }} onClick={handleSave}>Save Change</button>
-              <button style={{ ...styles.btnSecondary, background: "#8B9EB8" }} onClick={handleCancel}>Cancle</button>
+              <button style={{ ...styles.btnSecondary }}  onClick={() => navigate("/api-keys/edit/:id")}>Edit API Keys</button>
+              <button style={styles.btnDanger} onClick={handleDelete}>Delete</button>
             </div>
           </div>
         </div>

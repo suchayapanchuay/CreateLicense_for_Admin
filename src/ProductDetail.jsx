@@ -43,34 +43,44 @@ const styles = {
   divider: { height: 1, background: THEME.border, border: "none" },
 
   grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 },
-  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 12 },
-  field: { display: "grid", gap: 6 },
-  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700,marginBottom: 8, },
+  field: { display: "grid", gap: 8 },
+  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700,marginBottom: 8 },
+
   input: {
-    width: "80%", background: "rgba(255,255,255,0.07)", color: THEME.text,marginBottom: 8,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
+    width: "80%",
+    background: "rgba(255,255,255,0.07)",
+    color: THEME.text,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 8,
+    padding: "10px 12px",
+    outline: "none",
+    marginBottom: 8
   },
-  selectWrap: { position: "relative" },
+  inputRead: {
+    opacity: 1,
+    pointerEvents: "none",
+    background: "rgba(255,255,255,0.08)",
+  },
+  selectWrap: { position: "relative", width: "80%" },
   select: {
-    width: "100%", appearance: "none", background: "rgba(255,255,255,0.07)", color: THEME.text,marginBottom: 8,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 38px 10px 12px", outline: "none", fontWeight: 600,
+    width: "100%",
+    appearance: "none",
+    background: "rgba(255,255,255,0.07)",
+    color: THEME.text,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 8,
+    padding: "10px 38px 10px 12px",
+    outline: "none",
+    fontWeight: 600,
   },
+  selectRead: { pointerEvents: "none", opacity: 1 },
   caret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: THEME.textFaint, pointerEvents: "none" },
 
   checksRow: { display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" },
   check: { display: "flex", alignItems: "center", gap: 8, color: THEME.text },
 
-  constraintRow: { display: "grid", gridTemplateColumns: "auto 180px", gap: 12, alignItems: "center" },
-  constraintWrap: { display: "grid", gap: 10, width: 360 },
-  constraintInput: (enabled) => ({
-    ...styles.input,
-    opacity: enabled ? 1 : 0.5,
-    pointerEvents: enabled ? "auto" : "none",
-  }),
-
   actions: { display: "flex", gap: 10, marginTop: 16 },
   btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
-  btnGhost: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text },
 
   /* Notifications panel */
   notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
@@ -88,7 +98,7 @@ const styles = {
   notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer" },
 };
 
-export default function AddProduct() {
+export default function ProductDetail() {
   const navigate = useNavigate();
 
   /* Notifications */
@@ -108,58 +118,24 @@ export default function AddProduct() {
     return true;
   });
 
-  /* Form state */
-  const [form, setForm] = useState({
-    productName: "",
-    productCode: "",
+  /* Read-only product data (mock) */
+  const form = {
+    productName: "Smart Audit",
+    productCode: "smartaudit",
     status: "active",
-    description: "",
-    version: "",
+    description: "Audit and compliance management tool",
+    version: "1.0.0",
     category: "Accounting Software",
-
-    // License policy
-    typeTrial: false,
+    typeTrial: true,
     typeSubscription: false,
-    typePerpetual: false,
+    typePerpetual: true,
     licenseDuration: "365",
-
-    // Constraints
-    limitSeatsEnabled: false,
-    limitSeats: "",
-    limitDeviceEnabled: false,
-    limitDevice: "",
-    rateLimitEnabled: false,
-    rateLimit: "",
-  });
-
-  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const onCreate = () => {
-    const payload = {
-      product: {
-        name: form.productName,
-        code: form.productCode,
-        status: form.status,
-        description: form.description,
-        version: form.version,
-        category: form.category,
-      },
-      licensePolicy: {
-        supportedTypes: [
-          form.typeTrial && "trial",
-          form.typeSubscription && "subscription",
-          form.typePerpetual && "perpetual",
-        ].filter(Boolean),
-        durationDays: Number(form.licenseDuration),
-      },
-      constraints: {
-        maxSeats: form.limitSeatsEnabled ? Number(form.limitSeats || 0) : null,
-        maxDevice: form.limitDeviceEnabled ? Number(form.limitDevice || 0) : null,
-        rateLimit: form.rateLimitEnabled ? form.rateLimit : null,
-      },
-    };
-    console.log("Create Product (mock) →", payload);
-    alert("Product created (mock). ดู payload ใน console");
+    limitSeatsEnabled: true,
+    limitSeats: "100",
+    limitDeviceEnabled: true,
+    limitDevice: "5",
+    rateLimitEnabled: true,
+    rateLimit: "100 req/day",
   };
 
   return (
@@ -212,7 +188,6 @@ export default function AddProduct() {
                     <button style={styles.notiBtn} onClick={() => navigate("/Noti")}>View All</button>
                   </div>
                 ))}
-                <div style={{ height: 120, borderBottom: `1px solid ${THEME.border}` }} />
               </div>
               <div style={styles.notiFooter} onClick={() => navigate("/Noti")}>Veiw All</div>
             </div>
@@ -222,7 +197,7 @@ export default function AddProduct() {
           <div style={styles.title}>Products</div>
           <div style={styles.breadcrumb}>
             <span style={{ cursor: "pointer" }} onClick={() => navigate("/product")}>Product</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }} >Add Product</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Product Detail</span>
           </div>
 
           {/* Card */}
@@ -230,19 +205,20 @@ export default function AddProduct() {
             {/* Section: Product Information */}
             <div style={styles.section}>
               <div style={styles.sectionHead}>Product Information</div>
-              <div className="row-1" style={styles.grid3}>
+
+              <div style={styles.grid3}>
                 <div style={styles.field}>
                   <div style={styles.label}>Product Name</div>
-                  <input style={styles.input} value={form.productName} onChange={(e) => patch("productName", e.target.value)} />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.productName} readOnly />
                 </div>
                 <div style={styles.field}>
                   <div style={styles.label}>Product Code</div>
-                  <input style={styles.input} value={form.productCode} onChange={(e) => patch("productCode", e.target.value)} />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.productCode} readOnly />
                 </div>
                 <div style={styles.field}>
                   <div style={styles.label}>Status</div>
-                  <div style={styles.selectWrap}>
-                    <select style={styles.select} value={form.status} onChange={(e) => patch("status", e.target.value)}>
+                  <div style={{ ...styles.selectWrap, ...styles.selectRead }}>
+                    <select style={{ ...styles.select, ...styles.selectRead }} value={form.status} disabled>
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
@@ -254,16 +230,16 @@ export default function AddProduct() {
               <div style={styles.grid3}>
                 <div style={styles.field}>
                   <div style={styles.label}>Description</div>
-                  <input style={styles.input} value={form.description} onChange={(e) => patch("description", e.target.value)} />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.description} readOnly />
                 </div>
                 <div style={styles.field}>
                   <div style={styles.label}>Version</div>
-                  <input style={styles.input} value={form.version} onChange={(e) => patch("version", e.target.value)} />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.version} readOnly />
                 </div>
                 <div style={styles.field}>
                   <div style={styles.label}>Category</div>
-                  <div style={styles.selectWrap}>
-                    <select style={styles.select} value={form.category} onChange={(e) => patch("category", e.target.value)}>
+                  <div style={{ ...styles.selectWrap, ...styles.selectRead }}>
+                    <select style={{ ...styles.select, ...styles.selectRead }} value={form.category} disabled>
                       <option>Accounting Software</option>
                       <option>Cloud Services</option>
                       <option>Developer Tools</option>
@@ -282,29 +258,27 @@ export default function AddProduct() {
             <div style={styles.section}>
               <div style={styles.sectionHead}>License Policy</div>
 
-              <div className="policy" style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
+              {/* 👇 จัดกริดให้ชิดซ้าย */}
+              <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 16, justifyContent: "start", alignItems: "end" }}>
                 <div>
                   <div style={styles.label}>Supported License Types</div>
                   <div style={{ ...styles.checksRow, marginTop: 8 }}>
                     <label style={styles.check}>
-                      <input type="checkbox" checked={form.typeTrial} onChange={(e) => patch("typeTrial", e.target.checked)} />
-                      Trial
+                      <input type="checkbox" checked={form.typeTrial} disabled /> Trial
                     </label>
                     <label style={styles.check}>
-                      <input type="checkbox" checked={form.typeSubscription} onChange={(e) => patch("typeSubscription", e.target.checked)} />
-                      Subscription
+                      <input type="checkbox" checked={form.typeSubscription} disabled /> Subscription
                     </label>
                     <label style={styles.check}>
-                      <input type="checkbox" checked={form.typePerpetual} onChange={(e) => patch("typePerpetual", e.target.checked)} />
-                      Perpetual
+                      <input type="checkbox" checked={form.typePerpetual} disabled /> Perpetual
                     </label>
                   </div>
                 </div>
 
-                <div style={{ justifySelf: "start", width: 220, marginLeft: -310 }}>
+                <div style={{ justifySelf: "start", width: 220 }}>
                   <div style={styles.label}>License Duration</div>
-                  <div style={styles.selectWrap}>
-                    <select style={styles.select} value={form.licenseDuration} onChange={(e) => patch("licenseDuration", e.target.value)}>
+                  <div style={{ ...styles.selectWrap, ...styles.selectRead, width: "100%" }}>
+                    <select style={{ ...styles.select, ...styles.selectRead }} value={form.licenseDuration} disabled>
                       <option value="7">7 days</option>
                       <option value="30">30 days</option>
                       <option value="90">90 days</option>
@@ -324,63 +298,30 @@ export default function AddProduct() {
               <div style={styles.sectionHead}>Constraints</div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
-                <div style={styles.constraintWrap}>
+                <div style={styles.field}>
                   <label style={styles.check}>
-                    <input
-                      type="checkbox"
-                      checked={form.limitSeatsEnabled}
-                      onChange={(e) => patch("limitSeatsEnabled", e.target.checked)}
-                    />
-                    Max Seats
+                    <input type="checkbox" checked={form.limitSeatsEnabled} disabled /> Max Seats
                   </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 50"
-                    value={form.limitSeats}
-                    onChange={(e) => patch("limitSeats", e.target.value)}
-                    style={styles.constraintInput(form.limitSeatsEnabled)}
-                  />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.limitSeats} readOnly />
                 </div>
 
-                <div style={styles.constraintWrap}>
+                <div style={styles.field}>
                   <label style={styles.check}>
-                    <input
-                      type="checkbox"
-                      checked={form.limitDeviceEnabled}
-                      onChange={(e) => patch("limitDeviceEnabled", e.target.checked)}
-                    />
-                    Max Device
+                    <input type="checkbox" checked={form.limitDeviceEnabled} disabled /> Max Device
                   </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 3"
-                    value={form.limitDevice}
-                    onChange={(e) => patch("limitDevice", e.target.value)}
-                    style={styles.constraintInput(form.limitDeviceEnabled)}
-                  />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.limitDevice} readOnly />
                 </div>
 
-                <div style={styles.constraintWrap}>
+                <div style={styles.field}>
                   <label style={styles.check}>
-                    <input
-                      type="checkbox"
-                      checked={form.rateLimitEnabled}
-                      onChange={(e) => patch("rateLimitEnabled", e.target.checked)}
-                    />
-                    Rate Limit
+                    <input type="checkbox" checked={form.rateLimitEnabled} disabled /> Rate Limit
                   </label>
-                  <input
-                    placeholder="e.g. 100 req/min"
-                    value={form.rateLimit}
-                    onChange={(e) => patch("rateLimit", e.target.value)}
-                    style={styles.constraintInput(form.rateLimitEnabled)}
-                  />
+                  <input style={{ ...styles.input, ...styles.inputRead }} value={form.rateLimit} readOnly />
                 </div>
               </div>
 
               <div style={styles.actions}>
-                <button style={styles.btnPrimary} onClick={onCreate}>Create Product</button>
-                <button style={styles.btnGhost} onClick={() => navigate(-1)}>Cancel</button>
+                <button style={styles.btnPrimary} onClick={() => navigate("/products/edit/:id")}>Edit Product</button>
               </div>
             </div>
           </div>

@@ -1,267 +1,253 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FiSearch } from "react-icons/fi";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import Sidebar from "./SideBar";
+import { FiSearch, FiChevronDown, FiEye } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
-import Sidebar from "./SideBar";
+import { useNavigate } from "react-router-dom";
 
-const products = [
-    { id: 1, name: "Product A", cat: "Accounting Software", status: "Active" },
-    { id: 2, name: "Product B", cat: "Cloud Services", status: "Active" },
-    { id: 3, name: "Product D", cat: "Developer Tools", status: "Active" },
-    { id: 4, name: "Product C", cat: "HR & Payroll", status: "Active" },
-];
-
-const styles = {
-    container: {
-        display: "flex",
-        minHeight: "100vh",
-        backgroundColor: "#003d80",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    },
-    sidebar: {
-        flexShrink: 0,
-        width: 180,
-        backgroundColor: "#ffffff",
-        padding: "20px 12px",
-    },
-    logo: {
-        width: 160,
-        marginBottom: 40,
-    },
-    navItem: (active) => ({
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "10px 0",
-        fontSize: 15,
-        cursor: "pointer",
-        color: active ? "#ffffff" : "#000000",
-        backgroundColor: active ? "#003d80" : "transparent",
-        borderRadius: 6,
-        paddingLeft: 12,
-        marginBottom: 6,
-    }),
-    content: {
-        flex: 1,
-        backgroundColor: "#003d80",
-        display: "flex",
-        flexDirection: "column",
-        padding: "30px",
-        overflowX: "hidden",
-        position: "relative",
-    },
-    topbar: {
-        backgroundColor: "#003d80",
-        padding: "12px 20px",
-        display: "flex",
-        justifyContent: "flex-end",
-        alignItems: "center",
-        gap: 16,
-        color: "white",
-        flexWrap: "wrap",
-    },
-    searchBox: {
-        display: "flex",
-        alignItems: "center",
-        backgroundColor: "#003d80",
-        border: "1px solid white",
-        borderRadius: 10,
-        padding: "4px 12px",
-        color: "#ffffff",
-    },
-    input: {
-        border: "none",
-        padding: "4px 8px",
-        outline: "none",
-        backgroundColor: "transparent",
-        color: "#ffffff",
-    },
-    header: {
-        padding: "30px 30px 0 30px",
-    },
-    title: {
-        fontSize: 22,
-        fontWeight: "bold",
-        color: "white",
-        marginBottom: 4,
-    },
-    notiPanel: {
-        position: "absolute",
-        top: 60,
-        right: 30,
-        backgroundColor: "white",
-        width: 300,
-        borderRadius: 10,
-        boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
-        zIndex: 1000,
-        maxHeight: 400,
-        overflowY: "auto",
-        border: "1px solid #94a3b8"
-    },
-    notiHeader: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "12px 16px",
-        borderBottom: "1px solid #ccc",
-        fontWeight: "bold",
-        fontSize: 16,
-    },
-    notiItem: {
-        padding: "10px 16px",
-        borderBottom: "1px solid #f1f5f9",
-        fontSize: 14,
-    },
-    userControls: {
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "20px 30px",
-        gap: 10
-    },
-    dropdown: {
-        padding: "8px 12px",
-        borderRadius: 6,
-        border: "1px solid #ccc",
-        fontSize: 14,
-        alignSelf: "flex-start"
-    },
-    addUserButton: {
-        backgroundColor: "#0284c7",
-        color: "white",
-        fontWeight: "bold",
-        padding: "8px 16px",
-        border: "none",
-        borderRadius: 6,
-        cursor: "pointer",
-    },
-    table: {
-        width: "calc(100% - 60px)",
-        margin: "0 30px 30px 30px",
-        borderCollapse: "collapse",
-        backgroundColor: "white",
-        borderRadius: 8,
-        overflow: "hidden",
-    },
-    th: {
-        backgroundColor: "#1e3a8a",
-        color: "white",
-        padding: "12px",
-        textAlign: "left",
-    },
-    td: {
-        padding: "12px",
-        borderBottom: "1px solid #e5e7eb",
-    },
+/* THEME (คงชุดเดิม) */
+const THEME = {
+  pageBg: "#0B1A2D",
+  stageBg: "#0E1D33",
+  card: "#13253D",
+  border: "rgba(255,255,255,0.12)",
+  text: "rgba(255,255,255,0.92)",
+  textMut: "rgba(255,255,255,0.70)",
+  textFaint: "rgba(255,255,255,0.55)",
+  accent: "#3B82F6",
 };
 
-export default function Product() {
-    const [showNoti, setShowNoti] = useState(false);
-    const navigate = useNavigate();
-    const [statusFilter, setStatusFilter] = useState("All");
+/* MOCK NOTIFICATIONS */
+const NOTI_ITEMS = [
+  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 15, read: false },
+  { id: 2, type: "purchase", title: "Purchase Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2025", read: true },
+];
 
-    const filteredProducts = products.filter(
-      (p) => statusFilter === "All" || p.status === statusFilter
-    );
+/* MOCK PRODUCTS */
+const ALL_PRODUCTS = [
+  { id: 1, name: "Smart Audit", category: "Accounting Software", status: "active" },
+  { id: 2, name: "Product B",   category: "Cloud Services",       status: "active" },
+  { id: 3, name: "Product D",   category: "Developer Tools",      status: "active" },
+  { id: 4, name: "Product C",   category: "HR & Payroll",         status: "active" },
+];
 
-    return (
-        <div style={styles.container}>
-            <Sidebar />
+/* STYLES */
+const styles = {
+  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
+  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
 
-            <div style={styles.content}>
-                <div style={styles.topbar}>
-                    <div style={styles.searchBox}>
-                        <FiSearch color="white" />
-                        <input placeholder="search" style={styles.input} />
-                    </div>
-                    <div onClick={() => setShowNoti(!showNoti)} style={{ cursor: "pointer" }}>
-                        <IoMdNotificationsOutline size={24} color="white" />
-                    </div>
-                </div>
+  /* topbar */
+  topbar: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16 },
+  searchBox: { display: "flex", alignItems: "center", gap: 8, border: `1px solid ${THEME.border}`, padding: "6px 10px", borderRadius: 10, minWidth: 220, color: THEME.text },
+  searchInput: { border: "none", outline: "none", background: "transparent", color: THEME.text, width: "100%" },
 
-                {showNoti && (
-                    <div style={styles.notiPanel}>
-                        <div style={styles.notiHeader}>
-                            Notifications
-                            <IoClose onClick={() => setShowNoti(false)} style={{ cursor: "pointer" }} />
-                        </div>
-                        <div style={styles.notiItem}>License expired for Client ABC</div>
-                        <div style={styles.notiItem}>New client added: XYZ Co.</div>
-                    </div>
-                )}
+  title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 20px" },
 
-                <div style={styles.header}>
-                    <div style={styles.title}>Products</div>
-                </div>
+  /* toolbar */
+  toolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  selectWrap: { position: "relative", display: "inline-block" },
+  select: {
+    appearance: "none", background: THEME.card, color: THEME.text, border: `1px solid ${THEME.border}`,
+    borderRadius: 8, padding: "8px 34px 8px 12px", fontWeight: 700, cursor: "pointer",
+  },
+  caret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: THEME.textMut, pointerEvents: "none" },
+  addBtn: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: "#27A9FF", color: "#062033" },
 
-                <div style={styles.userControls}>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        style={styles.dropdown}
-                      >
-                        <option value="All">All</option>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    <button
-                        style={styles.addUserButton}
-                        onClick={() => navigate("/product/add")}
-                    >
-                        + Add Product
-                    </button>
-                </div>
+  /* table */
+  tableWrap: { borderRadius: 12, overflow: "hidden", background: THEME.card, border: `1px solid ${THEME.border}` },
+  header: {
+    background: "rgba(255,255,255,0.08)",
+    display: "grid",
+    gridTemplateColumns: "2.4fr 2fr 1.2fr 1fr",
+    padding: "12px 18px",
+    color: THEME.text,
+    fontWeight: 800,
+  },
+  row: {
+    display: "grid",
+    gridTemplateColumns: "2.4fr 2fr 1.2fr 1fr",
+    padding: "16px 18px",
+    color: THEME.text,
+    borderTop: `1px solid ${THEME.border}`,
+    alignItems: "center",
+  },
+  statusBadge: (type) => ({
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: 999,
+    fontWeight: 800,
+    fontSize: 12,
+    background: type === "active" ? "#A3E635" : "#94A3B8",
+    color: type === "active" ? "#0C2712" : "#1E293B",
+  }),
+  eyeBtn: { width: 34, height: 34, display: "grid", placeItems: "center", borderRadius: "999px", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, cursor: "pointer" },
 
-                <table style={styles.table}>
-                    <thead>
-                        <tr>
-                            <th style={styles.th}>Product Name</th>
-                            <th style={styles.th}>Category</th>
-                            <th style={styles.th}>Status</th>
-                            <th style={styles.th}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredProducts.map((product, index) => (
-                            <tr key={index}>
-                                <td style={styles.td}>{product.name}</td>
-                                <td style={styles.td}>{product.cat}</td>
-                                <td style={styles.td}>
-                                    <span style={{
-                                        backgroundColor: product.status === "Active" ? "#bbf7d0" : "#cbd5e1",
-                                        color: "#000",
-                                        padding: "2px 8px",
-                                        borderRadius: 6,
-                                        fontSize: 12,
-                                        fontWeight: "bold"
-                                    }}>
-                                        {product.status}
-                                    </span>
-                                </td>
-                                <td style={styles.td}>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                        <button
-                                            style={{
-                                                cursor: "pointer",
-                                                backgroundColor: "#004185",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: 4,
-                                                padding: "6px 12px",
-                                                fontWeight: 500,
+  /* pagination */
+  pagination: { display: "flex", justifyContent: "center", alignItems: "center", gap: 18, marginTop: 18 },
+  pageBtn: { width: 32, height: 32, borderRadius: 8, border: `1px solid ${THEME.border}`, display: "grid", placeItems: "center", color: THEME.textMut, cursor: "pointer", background: "transparent", fontWeight: 600 },
+  pageCurrent: { minWidth: 32, height: 32, borderRadius: 8, background: THEME.card, display: "grid", placeItems: "center", color: THEME.text, fontWeight: 800, border: `1px solid ${THEME.border}` },
 
-                                            }}
-                                            onClick={() => navigate(`/products/edit/${product.id}`)}
-                                        >
-                                            Edit
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+  /* Notifications panel */
+  notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
+  notiHead: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${THEME.border}`, fontWeight: 900, fontSize: 22 },
+  notiSelectWrap: { position: "relative", display: "inline-block" },
+  notiSelect: { appearance: "none", background: "#183154", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 14px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
+  selectCaret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: THEME.textMut, fontSize: 18 },
+  notiClose: { cursor: "pointer" },
+  notiList: { maxHeight: 560, overflowY: "auto" },
+  notiItem: { padding: "16px", borderBottom: `1px solid ${THEME.border}` },
+  notiBadge: { fontSize: 13, color: THEME.textMut, marginBottom: 6 },
+  notiClient: { fontSize: 22, fontWeight: 800, marginBottom: 4, color: THEME.text },
+  notiMetaRow: { display: "flex", justifyContent: "flex-start", gap: 6, color: THEME.textFaint, fontSize: 14, marginTop: 8 },
+  notiBtn: { marginTop: 10, border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, padding: "8px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer" },
+  notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer" },
+};
+
+export default function Products() {
+  const navigate = useNavigate();
+
+  /* notifications */
+  const [showNoti, setShowNoti] = useState(false);
+  const [notiFilter, setNotiFilter] = useState("all");
+  const notiRef = useRef(null);
+  useEffect(() => {
+    const onClick = (e) => { if (notiRef.current && !notiRef.current.contains(e.target)) setShowNoti(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+  const filteredNoti = NOTI_ITEMS.filter((n) => {
+    if (notiFilter === "all") return true;
+    if (notiFilter === "unread") return !n.read;
+    if (notiFilter === "trial") return n.type === "trial";
+    if (notiFilter === "purchase") return n.type === "purchase";
+    return true;
+  });
+
+  /* table state */
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const products = useMemo(() => {
+    return ALL_PRODUCTS.filter((p) => {
+      const hit =
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.category.toLowerCase().includes(search.toLowerCase());
+      const statusOK = statusFilter === "all" ? true : p.status === statusFilter;
+      return hit && statusOK;
+    });
+  }, [search, statusFilter]);
+
+  return (
+    <div style={styles.root}>
+      <Sidebar />
+      <div style={styles.content}>
+        <div style={styles.stage}>
+
+          {/* topbar */}
+          <div style={styles.topbar}>
+            <div style={styles.searchBox}>
+              <FiSearch />
+              <input
+                placeholder="Search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={styles.searchInput}
+              />
             </div>
+            <div onClick={() => setShowNoti((v) => !v)} style={{ cursor: "pointer" }}>
+              <IoMdNotificationsOutline size={24} color={THEME.text} />
+            </div>
+          </div>
+
+          {/* Notifications Panel */}
+          {showNoti && (
+            <div style={styles.notiPanelWrap} ref={notiRef}>
+              <div style={styles.notiHead}>
+                <span>Notifications ({NOTI_ITEMS.length})</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={styles.notiSelectWrap}>
+                    <select value={notiFilter} onChange={(e) => setNotiFilter(e.target.value)} style={styles.notiSelect}>
+                      <option value="all">All</option>
+                      <option value="unread">Unread</option>
+                      <option value="trial">Trial</option>
+                      <option value="purchase">Purchase</option>
+                    </select>
+                    <FiChevronDown style={styles.selectCaret} />
+                  </div>
+                  <IoClose size={22} onClick={() => setShowNoti(false)} style={styles.notiClose} />
+                </div>
+              </div>
+
+              <div style={styles.notiList}>
+                {filteredNoti.map((n) => (
+                  <div key={n.id} style={styles.notiItem}>
+                    <div style={styles.notiBadge}>{n.title}</div>
+                    <div style={styles.notiClient}>{n.client}</div>
+                    <div style={styles.notiMetaRow}>
+                      <span><strong style={{ color: THEME.textFaint }}>Product :</strong> {n.product}</span>
+                      {n.durationDays ? (
+                        <span><strong style={{ color: THEME.textFaint }}>Duration :</strong> {n.durationDays} days</span>
+                      ) : <span />}
+                    </div>
+                    <div style={{ ...styles.notiMetaRow, marginTop: 6 }}>
+                      <span><strong style={{ color: THEME.textFaint }}>Requested :</strong> {n.requested}</span>
+                      <span />
+                    </div>
+                    <button style={styles.notiBtn} onClick={() => navigate("/Noti")}>View All</button>
+                  </div>
+                ))}
+                <div style={{ height: 120, borderBottom: `1px solid ${THEME.border}` }} />
+              </div>
+
+              <div style={styles.notiFooter} onClick={() => navigate("/Noti")}>Veiw All</div>
+            </div>
+          )}
+
+          {/* Heading */}
+          <div style={styles.title}>Products</div>
+
+          {/* toolbar */}
+          <div style={styles.toolbar}>
+            <div className="left">
+              <div style={styles.selectWrap}>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={styles.select}>
+                  <option value="all">Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <FiChevronDown style={styles.caret} />
+              </div>
+            </div>
+            <button style={styles.addBtn} onClick={() => navigate("/product/add")}>+ Add Product</button>
+          </div>
+
+          {/* table */}
+          <div style={styles.tableWrap}>
+            <div style={styles.header}>
+              <div>Product Name</div>
+              <div>Category</div>
+              <div>Status</div>
+              <div>Actions</div>
+            </div>
+
+            {products.map((p) => (
+              <div key={p.id} style={styles.row}>
+                <div>{p.name}</div>
+                <div>{p.category}</div>
+                <div><span style={styles.statusBadge(p.status)}>{p.status === "active" ? "Active" : "Inactive"}</span></div>
+                <div><button style={styles.eyeBtn} onClick={() => navigate("/product-details/:id")}><FiEye /></button></div>
+              </div>
+            ))}
+          </div>
+
+          {/* pagination */}
+          <div style={styles.pagination}>
+            <div style={styles.pageBtn}>‹</div>
+            <div style={styles.pageCurrent}>1</div>
+            <div style={styles.pageBtn}>›</div>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "./SideBar";
 import { FiSearch, FiChevronDown } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
-import { IoClose, IoPencilOutline } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { IoClose } from "react-icons/io5";
+import { useNavigate, useParams } from "react-router-dom";
 
 const THEME = {
   pageBg: "#0B1A2D",
@@ -14,23 +14,20 @@ const THEME = {
   textMut: "rgba(255,255,255,0.70)",
   textFaint: "rgba(255,255,255,0.55)",
   accent: "#3B82F6",
-  btn: "#3B82F6",
-  btnText: "#fff",
 };
 
 /* MOCK NOTIFICATIONS */
 const NOTI_ITEMS = [
-  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 15, read: false },
-  { id: 2, type: "trial", title: "Trial Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 7, read: true },
-  { id: 3, type: "purchase", title: "Purchase Request", client: "Client C", product: "Smart Audit", requested: "31 Aug 2025", read: false },
+  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2568", durationDays: 15, read: false },
+  { id: 2, type: "trial", title: "Trial Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2568", durationDays: 7, read: true },
+  { id: 3, type: "purchase", title: "Purchase Request", client: "Client C", product: "Smart Audit", requested: "31 Aug 2568", read: false },
 ];
 
-/* MOCK EMAIL TEMPLATE DATA */
-const TEMPLATES = [
-  { id: 1, name: "License Expiry", subject: "Your License Will Expire Soon", lastUpdated: "2025-08-28", status: "Active" },
-  { id: 2, name: "Welcome Email", subject: "Welcome to Smart Audit", lastUpdated: "2025-08-20", status: "Draft" },
-  { id: 3, name: "Password Reset", subject: "Reset Your Password", lastUpdated: "2025-08-20", status: "Disabled" },
-];
+const MOCK_TEMPLATE = {
+  name: "Welcome Email",
+  subject: "Welcome to Smart Click!",
+  content: "Hello,\n\nThank you for signing up. We are excited to have you on board!\n\nBest regards,\nThe Smart Click Team",
+};
 
 const styles = {
   root: { display: "flex", minHeight: "100vh", background: THEME.pageBg, fontFamily: "Inter, system-ui" },
@@ -44,78 +41,25 @@ const styles = {
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "20px 0 6px" },
   breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 18 },
 
-  btn: { display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 8, fontWeight: 700, cursor: "pointer", border: "none" },
-  btnPrimary: { background: THEME.accent, color: THEME.btnText },
+  formCard: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 18 },
+  formSectionTitle: { color: "#99C1FF", fontWeight: 800, marginBottom: 12 },
 
-  // Table Styles using CSS Grid
-  tableWrap: {
-    background: THEME.card,
-    border: `1px solid ${THEME.border}`,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginTop: 20,
+  formField: { display: "flex", flexDirection: "column", marginBottom: 16 },
+  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
+  input: {
+    width: "95%", background: "rgba(255,255,255,0.06)", color: THEME.text,
+    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
   },
-  header: {
-    background: "rgba(255, 255, 255, 0.06)",
-    display: "grid",
-    gridTemplateColumns: "2.6fr 3fr 2fr 1.2fr 1fr",
-    padding: "12px 16px",
-    color: THEME.text,
-    fontWeight: 700,
-  },
-  row: {
-    display: "grid",
-    gridTemplateColumns: "2.6fr 3fr 2fr 1.2fr 1fr",
-    alignItems: "center",
-    padding: "16px 16px",
-    borderTop: `1px solid ${THEME.border}`,
-  },
-  
-  // Cell Styles
-  cell: {
-    color: THEME.textMut,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    fontWeight: 500,
-  },
-  templateName: {
-    color: THEME.text,
-    fontWeight: 700,
-  },
-  subjectLine: {
-    color: THEME.textMut,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-  
-  statusBadge: {
-    display: "inline-block",
-    padding: "6px 10px",
-    borderRadius: 999,
-    fontWeight: 700,
-    fontSize: 12,
-  },
-  statusActive: { color: "#10B981", background: "rgba(16, 185, 129, 0.1)" },
-  statusDraft: { color: "#FBBF24", background: "rgba(251, 191, 36, 0.1)" },
-  statusDisabled: { color: "#EF4444", background: "rgba(239, 68, 68, 0.1)" },
-  
-  actionBtn: {
-    width: 34,
-    height: 34,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: 999,
-    border: `1px solid ${THEME.border}`,
-    background: "transparent",
-    color: THEME.textMut,
-    cursor: "pointer",
+  textarea: {
+    width: "95%", background: "rgba(255,255,255,0.06)", color: THEME.text,
+    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
+    minHeight: "150px", resize: "vertical"
   },
 
-  pagination: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginTop: 20, color: THEME.textMut },
-  paginationCurrent: { fontWeight: 700, color: THEME.text, background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 12px" },
-
+  actions: { display: "flex", gap: 12, marginTop: 20 },
+  btnSave: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
+  btnCancel: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: "#8B9EB8", color: "#fff" },
+  
   /* Notifications */
   notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
   notiHead: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${THEME.border}`, fontWeight: 900, fontSize: 22 },
@@ -132,11 +76,20 @@ const styles = {
   notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer", borderTop: `1px solid ${THEME.border}` },
 };
 
-export default function EmailTemplate() {
+export default function EditEmailTemplate() {
   const navigate = useNavigate();
+  const { templateId } = useParams(); // In a real app, you'd use this to fetch data
+  
+  const [form, setForm] = useState(MOCK_TEMPLATE);
   const [showNoti, setShowNoti] = useState(false);
-  const [notiFilter, setNotiFilter] = useState("all");
   const notiRef = useRef(null);
+  const [notiFilter, setNotiFilter] = useState("all");
+
+  useEffect(() => {
+    // In a real app, fetch template data based on templateId
+    console.log(`Fetching template with ID: ${templateId}`);
+    setForm(MOCK_TEMPLATE);
+  }, [templateId]);
 
   useEffect(() => {
     const onClick = (e) => { if (notiRef.current && !notiRef.current.contains(e.target)) setShowNoti(false); };
@@ -156,14 +109,20 @@ export default function EmailTemplate() {
     if (notiFilter === "purchase") return n.type === "purchase";
     return true;
   });
-  
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "Active": return styles.statusActive;
-      case "Draft": return styles.statusDraft;
-      case "Disabled": return styles.statusDisabled;
-      default: return {};
-    }
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleSave = () => {
+    alert("Template saved successfully!");
+    console.log("Saving template:", form);
+    navigate("/setting/email-template");
+  };
+
+  const handleCancel = () => {
+    navigate("/setting/email-template");
   };
 
   return (
@@ -226,50 +185,51 @@ export default function EmailTemplate() {
           <div style={styles.title}>Setting / Logs</div>
           <div style={styles.breadcrumb}>
             <span style={{ cursor: "pointer" }} onClick={() => navigate("/setting")}>Setting / Logs</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Email Template</span>
+            &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }} onClick={() => navigate("/email-template")}>Email Template</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Edit Email Template</span>
           </div>
 
-          {/* Create New Button */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-            <button style={{ ...styles.btn, ...styles.btnPrimary }} onClick={() => navigate("/email-template/create-email")}>
-              + Create New Template
-            </button>
-          </div>
-
-          {/* Templates Table with CSS Grid layout */}
-          <div style={styles.tableWrap}>
-            <div style={styles.header}>
-              <div>Template Name</div>
-              <div>Subject Line</div>
-              <div>Last Updated</div>
-              <div>Status</div>
-              <div>Actions</div>
+          {/* Edit Template Form */}
+          <div style={styles.formCard}>
+            <div style={styles.formSectionTitle}>Edit Email Template</div>
+            
+            <div style={styles.formField}>
+              <label style={styles.label}>Name</label>
+              <input 
+                type="text" 
+                name="name" 
+                value={form.name} 
+                onChange={handleFormChange} 
+                style={styles.input} 
+              />
             </div>
 
-            {TEMPLATES.map((template) => (
-              <div key={template.id} style={styles.row}>
-                <div style={{...styles.cell, ...styles.templateName}}>{template.name}</div>
-                <div style={{...styles.cell, ...styles.subjectLine}}>{template.subject}</div>
-                <div style={styles.cell}>{template.lastUpdated}</div>
-                <div>
-                  <span style={{ ...styles.statusBadge, ...getStatusStyle(template.status) }}>
-                    {template.status}
-                  </span>
-                </div>
-                <div>
-                  <button style={styles.actionBtn} onClick={() => navigate("/email-template/edit-email")}>
-                    <IoPencilOutline size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+            <div style={styles.formField}>
+              <label style={styles.label}>Subject</label>
+              <input 
+                type="text" 
+                name="subject" 
+                value={form.subject} 
+                onChange={handleFormChange} 
+                style={styles.input} 
+              />
+            </div>
 
-          {/* Pagination */}
-          <div style={styles.pagination}>
-            <span>&lt;</span>
-            <span style={styles.paginationCurrent}>1</span>
-            <span>&gt;</span>
+            <div style={styles.formField}>
+              <label style={styles.label}>Content</label>
+              <textarea 
+                name="content" 
+                value={form.content} 
+                onChange={handleFormChange} 
+                style={styles.textarea}
+              />
+            </div>
+
+            {/* Actions */}
+            <div style={styles.actions}>
+              <button style={styles.btnSave} onClick={handleSave}>Save Change</button>
+              <button style={styles.btnCancel} onClick={handleCancel}>Cancle</button>
+            </div>
           </div>
         </div>
       </div>

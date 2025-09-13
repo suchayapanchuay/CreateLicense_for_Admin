@@ -1,149 +1,235 @@
-// Updated ClientDetails.jsx with improved License UI layout
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { FiSearch } from "react-icons/fi";
+import React, { useState, useEffect, useRef } from "react";
+import Sidebar from "./SideBar";
+import { FiSearch, FiChevronDown, FiEye } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
-import Sidebar from "./SideBar";
+import { useNavigate } from "react-router-dom";
 
-const mockClients = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "081-234-5678",
-    company: "Acme Corporation",
-    joined: "January 15, 2024",
-    estimatedUsers: "0 - 10",
-    licenses: [
-      {
-        product: "Smart Audit",
-        version: "1.0.0",
-        type: "Subscription",
-        key: "ABCD-1234",
-        start: "2025-06-01",
-        end: "2026-06-01",
-        remaining: "315 days remaining",
-        devices: "2/3 Devices",
-        lastActivation: "2025-08-15",
-        source: "Direct Purchase",
-        notes: "Issued via corporate plan, 2025",
-        clientOrg: "SmartClick Co., Ltd.",
-        email: "client@gmail.com",
-        activated: false,
-      },
-    ],
-  },
+/* THEME */
+const THEME = {
+  pageBg: "#0B1A2D",
+  stageBg: "#0E1D33",
+  card: "#13253D",
+  border: "rgba(255,255,255,0.12)",
+  text: "rgba(255,255,255,0.92)",
+  textMut: "rgba(255,255,255,0.70)",
+  textFaint: "rgba(255,255,255,0.55)",
+  accent: "#3B82F6",
+};
+
+/* MOCK NOTIFICATIONS */
+const NOTI_ITEMS = [
+  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 15, read: false },
+  { id: 2, type: "purchase", title: "Purchase Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2025", read: true },
 ];
 
-export default function ClientDetails() {
-  const { id } = useParams();
+/* STYLES */
+const styles = {
+  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
+  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+
+  topbar: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16 },
+  searchBox: { display: "flex", alignItems: "center", gap: 8, border: `1px solid ${THEME.border}`, padding: "6px 10px", borderRadius: 10, minWidth: 200, color: THEME.text },
+  searchInput: { border: "none", outline: "none", background: "transparent", color: THEME.text, width: "100%" },
+
+  title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 6px" },
+  breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 12 },
+
+  card: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 18, marginBottom: 20 },
+  typePill: { background: "rgba(255,255,255,0.08)", padding: "6px 14px", borderRadius: 8, fontWeight: 700, display: "inline-block", marginBottom: 16 ,color: THEME.text},
+
+  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 12 },
+  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
+  pillInput: { width: "80%", background: "rgba(255,255,255,0.06)", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px" },
+
+  actions: { display: "flex", gap: 10, marginTop: 18 },
+  btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
+  btnDanger: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: "#B4534E", color: "#fff" },
+
+  sectionTitle: { fontSize: 20, fontWeight: 900, color: THEME.text, margin: "18px 0 10px" },
+  hr: { height: 1, background: THEME.border, border: "none", margin: "12px 0 16px" },
+
+  /* table */
+  tableWrap: { borderRadius: 10, overflow: "hidden", marginTop: 8 },
+  header: { background: "rgba(255,255,255,0.06)", display: "grid", gridTemplateColumns: "2fr 1fr 2fr 1.4fr 1.4fr 0.8fr", padding: "12px 16px", fontWeight: 700, color: THEME.text },
+  row: { display: "grid", gridTemplateColumns: "2fr 1fr 2fr 1.4fr 1.4fr 0.8fr", padding: "14px 16px", borderTop: `1px solid ${THEME.border}`, color: THEME.text },
+
+  eyeBtn: { width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "999px", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, cursor: "pointer" },
+
+  /* Notifications */
+  notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
+  notiHead: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${THEME.border}`, fontWeight: 900, fontSize: 22 },
+  notiSelectWrap: { position: "relative", display: "inline-block" },
+  notiSelect: { appearance: "none", background: "#183154", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 14px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
+  selectCaret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: THEME.textMut, fontSize: 18 },
+  notiClose: { cursor: "pointer" },
+  notiList: { maxHeight: 560, overflowY: "auto" },
+  notiItem: { padding: "16px", borderBottom: `1px solid ${THEME.border}` },
+  notiBadge: { fontSize: 13, color: THEME.textMut, marginBottom: 6 },
+  notiClient: { fontSize: 22, fontWeight: 800, marginBottom: 4, color: THEME.text },
+  notiMetaRow: { display: "flex", justifyContent: "flex-start", gap: 6, color: THEME.textFaint, fontSize: 14, marginTop: 8 },
+  notiBtn: { marginTop: 10, border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, padding: "8px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer" },
+  notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer" },
+};
+
+export default function ClientDetail() {
   const navigate = useNavigate();
+
+  /* Notifications */
   const [showNoti, setShowNoti] = useState(false);
+  const [notiFilter, setNotiFilter] = useState("all");
+  const notiRef = useRef(null);
+  useEffect(() => {
+    const onClick = (e) => { if (notiRef.current && !notiRef.current.contains(e.target)) setShowNoti(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+  const filteredNoti = NOTI_ITEMS.filter((n) => {
+    if (notiFilter === "all") return true;
+    if (notiFilter === "unread") return !n.read;
+    if (notiFilter === "trial") return n.type === "trial";
+    if (notiFilter === "purchase") return n.type === "purchase";
+    return true;
+  });
 
-  const client = mockClients.find((c) => c.id === id);
+  /* Mock data */
+  const client = {
+    firstName: "Suchaya",
+    lastName: "Panchuai",
+    email: "suchaya19@gmail.com",
+    phone: "0631234567",
+    company: "BlankSpace",
+    industry: "Software Engineer",
+    country: "Thailand",
+    estimateUser: "10",
+    message: "Please contact us within this month.",
+    trial: "15 days",
+    username: "User101",
+    password: "U12S36",
+  };
 
-  if (!client) {
-    return (
-      <div style={{ ...styles.container, justifyContent: "center", alignItems: "center", color: "white", gap: 15 }}>
-        <h2>Client not found</h2>
-        <button onClick={() => navigate("/client")} style={styles.button}>← Back to Clients</button>
-      </div>
-    );
-  }
+  const license = {
+    product: "Smart Audit",
+    type: "Trial",
+    key: "ABCD-1234-EFGH-5678",
+    start: "August 1, 2023",
+    end: "July 31, 2024",
+  };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.root}>
       <Sidebar />
       <div style={styles.content}>
-        <div style={styles.topbar}>
-          <div style={styles.searchBox}>
-            <FiSearch color="white" />
-            <input placeholder="search" style={styles.input} />
+        <div style={styles.stage}>
+          {/* Topbar */}
+          <div style={styles.topbar}>
+            <div style={styles.searchBox}>
+              <FiSearch />
+              <input placeholder="Search" style={styles.searchInput} />
+            </div>
+            <div onClick={() => setShowNoti((v) => !v)} style={{ cursor: "pointer" }}>
+              <IoMdNotificationsOutline size={24} color={THEME.text} />
+            </div>
           </div>
-          <div onClick={() => setShowNoti(!showNoti)} style={{ cursor: "pointer" }}>
-            <IoMdNotificationsOutline size={24} color="white" />
+
+          {/* Notifications Panel */}
+          {showNoti && (
+            <div style={styles.notiPanelWrap} ref={notiRef}>
+              <div style={styles.notiHead}>
+                <span>Notifications ({NOTI_ITEMS.length})</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={styles.notiSelectWrap}>
+                    <select value={notiFilter} onChange={(e) => setNotiFilter(e.target.value)} style={styles.notiSelect}>
+                      <option value="all">All</option>
+                      <option value="unread">Unread</option>
+                      <option value="trial">Trial</option>
+                      <option value="purchase">Purchase</option>
+                    </select>
+                    <FiChevronDown style={styles.selectCaret} />
+                  </div>
+                  <IoClose size={22} onClick={() => setShowNoti(false)} style={styles.notiClose} />
+                </div>
+              </div>
+              <div style={styles.notiList}>
+                {filteredNoti.map((n) => (
+                  <div key={n.id} style={styles.notiItem}>
+                    <div style={styles.notiBadge}>{n.title}</div>
+                    <div style={styles.notiClient}>{n.client}</div>
+                    <div style={styles.notiMetaRow}>
+                      <span><strong style={{ color: THEME.textFaint }}>Product :</strong> {n.product}</span>
+                      {n.durationDays && <span><strong style={{ color: THEME.textFaint }}>Duration :</strong> {n.durationDays} days</span>}
+                    </div>
+                    <div style={{ ...styles.notiMetaRow, marginTop: 6 }}>
+                      <span><strong style={{ color: THEME.textFaint }}>Requested :</strong> {n.requested}</span>
+                    </div>
+                    <button style={styles.notiBtn} onClick={() => navigate("/Noti")}>View All</button>
+                  </div>
+                ))}
+              </div>
+              <div style={styles.notiFooter} onClick={() => navigate("/Noti")}>Veiw All</div>
+            </div>
+          )}
+
+          {/* Heading */}
+          <div style={styles.title}>Clients</div>
+          <div style={styles.breadcrumb}>
+            <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span> &nbsp;&gt;&nbsp; <span style={{ color: "#9CC3FF" }}>Client Detail</span>
           </div>
-        </div>
 
-        {showNoti && (
-          <div style={styles.notiPanel}>
-            <div style={styles.notiHeader}>Notifications<IoClose onClick={() => setShowNoti(false)} style={{ cursor: "pointer" }} /></div>
-            <div style={styles.notiItem}>License expired for Client ABC</div>
-            <div style={styles.notiItem}>New client added: XYZ Co.</div>
-          </div>
-        )}
-
-        <div style={{ padding: "30px" }}>
-          <button onClick={() => navigate("/client")} style={styles.backButton}>← Back to Clients</button>
-          <h2 style={styles.title}>Client Details</h2>
-
+          {/* Card Info */}
           <div style={styles.card}>
-            <p><strong>Name:</strong> {client.name}</p>
-            <p><strong>Email:</strong> {client.email}</p>
-            <p><strong>Phone:</strong> {client.phone}</p>
-            <p><strong>Company:</strong> {client.company}</p>
-            <p><strong>Joined:</strong> {client.joined}</p>
-            <p><strong>Estimated Users:</strong> {client.estimatedUsers}</p>
-            <div style={{ marginTop: 20 }}>
-              <button style={styles.button} onClick={() => navigate(`/client/${client.id}/edit`)}>Edit Client</button>
-              <button style={{ ...styles.button, backgroundColor: "#dc2626" }}>Delete Client</button>
-              <button style={{ ...styles.button, backgroundColor: "#22c55e" }} onClick={() => navigate("/create")}>+ Create License</button>
+            <div style={styles.typePill}>Trial Request</div>
+            <div style={styles.grid2}>
+              <div><div style={styles.label}>First Name</div><div style={styles.pillInput}>{client.firstName}</div></div>
+              <div><div style={styles.label}>Last Name</div><div style={styles.pillInput}>{client.lastName}</div></div>
+            </div>
+            <div style={styles.grid2}>
+              <div><div style={styles.label}>Email</div><div style={styles.pillInput}>{client.email}</div></div>
+              <div><div style={styles.label}>Phone</div><div style={styles.pillInput}>{client.phone}</div></div>
+            </div>
+            <div style={styles.grid2}>
+              <div><div style={styles.label}>Country</div><div style={styles.pillInput}>{client.country}</div></div>
+              <div><div style={styles.label}>Company</div><div style={styles.pillInput}>{client.company}</div></div>
+            </div>
+            <div style={styles.grid2}>
+              <div><div style={styles.label}>Industry</div><div style={styles.pillInput}>{client.industry}</div></div>
+              <div><div style={styles.label}>Message</div><div style={styles.pillInput}>{client.message}</div></div>
+            </div>
+            <div style={styles.grid2}>
+              <div><div style={styles.label}>Estimate User</div><div style={styles.pillInput}>{client.estimateUser}</div></div>
+              <div><div style={styles.label}>Trial</div><div style={styles.pillInput}>{client.trial}</div></div>
+            </div>
+            <div style={styles.grid2}>
+              <div><div style={styles.label}>Username</div><div style={styles.pillInput}>{client.username}</div></div>
+              <div><div style={styles.label}>Password</div><div style={styles.pillInput}>{client.password}</div></div>
+            </div>
+
+            {/* Actions */}
+            <div style={styles.actions}>
+              <button style={styles.btnPrimary} onClick={() => navigate("/client/:id/edit")}>Edit Client</button>
+              <button style={styles.btnDanger} onClick={() => alert("Delete client")}>Delete Client</button>
             </div>
           </div>
 
-          <h3 style={{ ...styles.title, marginTop: 40 }}>License</h3>
-          {client.licenses.map((l, i) => (
-            <div key={i} style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 30 }}>
-              <div style={styles.licenseCard}>
-                <h4 style={styles.cardHeader}>License Details</h4>
-                <p><strong>Status:</strong> <span style={{ color: "#10b981" }}>✓ Active</span></p>
-                <p><strong>License Key:</strong> {l.key}</p>
-                <p><strong>Product:</strong> {l.product}</p>
-                <p><strong>Product Version:</strong> {l.version}</p>
-                <p><strong>Type:</strong> {l.type}</p>
-                <p><strong>Issued On:</strong> {l.start}</p>
-                <p><strong>Expires On:</strong> {l.end}</p>
-                <p><strong>Remaining:</strong> {l.remaining}</p>
-                <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                  <button style={styles.button}>Download PDF</button>
-                  <button style={{ ...styles.button, backgroundColor: "#0ea5e9" }}>View Terms</button>
-                </div>
-              </div>
-
-              <div style={styles.licenseCard}>
-                <h4 style={styles.cardHeader}>Additional Info</h4>
-                <p><strong>Devices Linked:</strong> {l.devices}</p>
-                <p><strong>Last Activation:</strong> {l.lastActivation}</p>
-                <p><strong>Notes:</strong> {l.notes}</p>
-                <p><strong>Source:</strong> {l.source}</p>
-                <p><strong>Client Org:</strong> {l.clientOrg}</p>
-                <p><strong>Contact Email:</strong> {l.email}</p>
-                <div style={{ display: "flex", gap: 10, marginTop: 90 }}>
-                  <button style={{ ...styles.button, backgroundColor: "#0ea5e9" }}>Renew License</button>
-                </div>
-              </div>
+          {/* License Section */}
+          <div style={styles.sectionTitle}>License</div>
+          <hr style={styles.hr} />
+          <div style={styles.tableWrap}>
+            <div style={styles.header}>
+              <div>Product</div><div>Type</div><div>License Key</div><div>Start Date</div><div>End Date</div><div>Actions</div>
             </div>
-          ))}
+            <div style={styles.row}>
+              <div>{license.product}</div>
+              <div>{license.type}</div>
+              <div>{license.key}</div>
+              <div>{license.start}</div>
+              <div>{license.end}</div>
+              <div><button style={styles.eyeBtn} onClick={() => navigate("/license")}><FiEye /></button></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: { display: "flex", minHeight: "100vh", backgroundColor: "#003d80", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" },
-  content: { flex: 1, backgroundColor: "#003d80", display: "flex", flexDirection: "column", overflowX: "hidden", padding: "30px", position: "relative" },
-  topbar: { backgroundColor: "#003d80", padding: "12px 20px", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16, color: "white" },
-  searchBox: { display: "flex", alignItems: "center", backgroundColor: "#003d80", border: "1px solid white", borderRadius: 10, padding: "4px 12px", color: "#ffffff" },
-  input: { border: "none", padding: "4px 8px", outline: "none", backgroundColor: "transparent", color: "#ffffff" },
-  title: { fontSize: 22, fontWeight: "bold", color: "white", marginBottom: 20 },
-  notiPanel: { position: "absolute", top: 60, right: 30, backgroundColor: "white", width: 300, borderRadius: 10, boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)", zIndex: 1000, maxHeight: 400, overflowY: "auto", border: "1px solid #94a3b8" },
-  notiHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #ccc", fontWeight: "bold", fontSize: 16 },
-  notiItem: { padding: "10px 16px", borderBottom: "1px solid #f1f5f9", fontSize: 14 },
-  card: { backgroundColor: "#ffffff", padding: 20, borderRadius: 10, color: "#000000", maxWidth: 700 },
-  button: { backgroundColor: "#1d4ed8", color: "#fff", padding: "8px 16px", border: "none", borderRadius: 6, marginRight: 10, cursor: "pointer" },
-  backButton: { backgroundColor: "#1e40af", color: "#ffffff", padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 14, marginBottom: 20 },
-  licenseCard: { flex: 1, minWidth: 320, backgroundColor: "white", color: "black", borderRadius: 10, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" },
-  cardHeader: { fontSize: 16, fontWeight: "bold", marginBottom: 12, color: "#1e3a8a" },
-};

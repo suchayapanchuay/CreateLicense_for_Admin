@@ -1,261 +1,305 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FiSearch } from "react-icons/fi";
+import React, { useState, useEffect, useRef } from "react";
+import Sidebar from "./SideBar";
+import { FiSearch, FiChevronDown } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { IoClose } from "react-icons/io5";
-import Sidebar from "./SideBar";
+import { useNavigate } from "react-router-dom";
+
+/* THEME */
+const THEME = {
+  pageBg: "#0B1A2D",
+  stageBg: "#0E1D33",
+  card: "#13253D",
+  border: "rgba(255,255,255,0.12)",
+  text: "rgba(255,255,255,0.92)",
+  textMut: "rgba(255,255,255,0.70)",
+  textFaint: "rgba(255,255,255,0.55)",
+  accent: "#3B82F6",
+};
+
+/* MOCK NOTIFICATIONS */
+const NOTI_ITEMS = [
+  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 15, read: false },
+  { id: 2, type: "trial", title: "Trial Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 7,  read: true  },
+  { id: 3, type: "purchase", title: "Purchase Request", client: "Client C", product: "Smart Audit", requested: "31 Aug 2025", read: false },
+];
+
+/* STYLES */
+const styles = {
+  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
+  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+
+  topbar: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16 },
+  searchBox: { display: "flex", alignItems: "center", gap: 8, border: `1px solid ${THEME.border}`, padding: "6px 10px", borderRadius: 10, minWidth: 200, color: THEME.text },
+  searchInput: { border: "none", outline: "none", background: "transparent", color: THEME.text, width: "100%" },
+
+  title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 6px" },
+  breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 12 },
+
+  card: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 18 },
+  row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 12 },
+  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
+  pillInput: {
+    width: "80%", background: "rgba(255,255,255,0.06)", color: THEME.text,
+    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
+  },
+  inline: { display: "flex", gap: 10, alignItems: "center" },
+
+  typeSelectWrap: { position: "relative", width: 160, marginBottom: 12 },
+  typeSelect: {
+    width: "100%", appearance: "none", background: "rgba(255,255,255,0.08)", color: THEME.text,
+    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "8px 34px 8px 12px", fontWeight: 700, cursor: "pointer"
+  },
+  caret: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: THEME.textFaint, pointerEvents: "none" },
+
+  credBox: { border: `1px solid ${THEME.border}`, borderRadius: 10, padding: 16, marginTop: 12 },
+  smallBtn: { border: "none", padding: "8px 10px", fontWeight: 700, borderRadius: 8, cursor: "pointer" },
+  smallBtnBlue: { background: "#52B1E6", color: "#062033" },
+  smallBtnGreen: { background: "#3DD9B0", color: "#062033" },
+
+  actions: { display: "flex", gap: 10, marginTop: 18 },
+  btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
+  btnGhost: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text },
+
+  /* Notifications */
+  notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
+  notiHead: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${THEME.border}`, fontWeight: 900, fontSize: 22 },
+  notiSelectWrap: { position: "relative", display: "inline-block" },
+  notiSelect: { appearance: "none", background: "#183154", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 14px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
+  selectCaret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: THEME.textMut, fontSize: 18 },
+  notiClose: { cursor: "pointer" },
+  notiList: { maxHeight: 560, overflowY: "auto" },
+  notiItem: { padding: "16px", borderBottom: `1px solid ${THEME.border}` },
+  notiBadge: { fontSize: 13, color: THEME.textMut, marginBottom: 6 },
+  notiClient: { fontSize: 22, fontWeight: 800, marginBottom: 4, color: THEME.text },
+  notiMetaRow: { display: "flex", color: THEME.textFaint, fontSize: 14, marginTop: 8 ,justifyContent: "flex-start", gap: "4px"},
+  notiBtn: { marginTop: 10, border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, padding: "8px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer" },
+  notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer" },
+};
 
 export default function AddClient() {
   const navigate = useNavigate();
-  const [showNoti, setShowNoti] = useState(false);
 
-  const [form, setForm] = useState({
-    companyName: "",
-    contactName: "",
-    email: "",
-    phone: "",
-    estimatedUsers: "0 - 10",
-    notes: "",
+  /* Notifications */
+  const [showNoti, setShowNoti] = useState(false);
+  const [notiFilter, setNotiFilter] = useState("all");
+  const notiRef = useRef(null);
+  useEffect(() => {
+    const onClick = (e) => { if (notiRef.current && !notiRef.current.contains(e.target)) setShowNoti(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+  const filteredNoti = NOTI_ITEMS.filter((n) => {
+    if (notiFilter === "all") return true;
+    if (notiFilter === "unread") return !n.read;
+    if (notiFilter === "trial") return n.type === "trial";
+    if (notiFilter === "purchase") return n.type === "purchase";
+    return true;
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  /* Form */
+  const [reqType, setReqType] = useState("trial");
+  const [form, setForm] = useState({
+    firstName: "Suchaya",
+    lastName: "Panchuai",
+    email: "suchaya19@gmail.com",
+    phone: "0631234567",
+    company: "BlankSpace",
+    industry: "Software Engineer",
+    country: "Thailand",
+    estimateUser: "10",
+    message: "Please contact us within this month.",
+    trialDays: "15 days",
+    username: "User101",
+    password: "U12S36",
+  });
+
+  const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const randomUsername = () => {
+    const base = ["User", "Client", "Member", "Acct", "Cust"];
+    const name = base[Math.floor(Math.random() * base.length)] + (100 + Math.floor(Math.random() * 900));
+    patch("username", name);
+  };
+  const randomPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    let pw = "";
+    for (let i = 0; i < 6; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+    patch("password", pw);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Client added:", form);
-    navigate("/client");
+  const onCreate = () => {
+    const payload = { requestType: reqType, ...form };
+    console.log("Create Client (mock) →", payload);
+    alert("Client created (mock). ดู payload ใน console");
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.root}>
       <Sidebar />
+
       <div style={styles.content}>
-        <div style={styles.topbar}>
-          <div style={styles.searchBox}>
-            <FiSearch color="white" />
-            <input placeholder="search" style={styles.input} />
-          </div>
-          <div onClick={() => setShowNoti(!showNoti)} style={{ cursor: "pointer" }}>
-            <IoMdNotificationsOutline size={24} color="white" />
-          </div>
-        </div>
-
-        {showNoti && (
-          <div style={styles.notiPanel}>
-            <div style={styles.notiHeader}>
-              Notifications
-              <IoClose onClick={() => setShowNoti(false)} style={{ cursor: "pointer" }} />
+        <div style={styles.stage}>
+          {/* Topbar */}
+          <div style={styles.topbar}>
+            <div style={styles.searchBox}>
+              <FiSearch />
+              <input placeholder="Search" style={styles.searchInput} />
             </div>
-            <div style={styles.notiItem}>License expired for Client ABC</div>
-            <div style={styles.notiItem}>New client added: XYZ Co.</div>
+            <div onClick={() => setShowNoti((v) => !v)} style={{ cursor: "pointer" }}>
+              <IoMdNotificationsOutline size={24} color={THEME.text} />
+            </div>
           </div>
-        )}
 
-        <div style={styles.formContainer}>
-          <button onClick={() => navigate("/client")} style={styles.backButton}>
-            ← Back to Clients
-          </button>
+          {/* Notifications Panel */}
+          {showNoti && (
+            <div style={styles.notiPanelWrap} ref={notiRef}>
+              <div style={styles.notiHead}>
+                <span>Notifications ({NOTI_ITEMS.length})</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={styles.notiSelectWrap}>
+                    <select value={notiFilter} onChange={(e) => setNotiFilter(e.target.value)} style={styles.notiSelect}>
+                      <option value="all">All</option>
+                      <option value="unread">Unread</option>
+                      <option value="trial">Trial</option>
+                      <option value="purchase">Purchase</option>
+                    </select>
+                    <FiChevronDown style={styles.selectCaret} />
+                  </div>
+                  <IoClose size={22} onClick={() => setShowNoti(false)} style={styles.notiClose} />
+                </div>
+              </div>
 
-          <h2 style={styles.sectionTitle}>Add Client</h2>
+              <div style={styles.notiList}>
+                {filteredNoti.map((n) => (
+                  <div key={n.id} style={styles.notiItem}>
+                    <div style={styles.notiBadge}>{n.title}</div>
+                    <div style={styles.notiClient}>{n.client}</div>
+                    <div style={styles.notiMetaRow}>
+                      <span><strong style={{ color: THEME.textFaint }}>Product :</strong> {n.product}</span>
+                      {n.durationDays ? <span><strong style={{ color: THEME.textFaint }}>Duration :</strong> {n.durationDays} days</span> : <span />}
+                    </div>
+                    <div style={{ ...styles.notiMetaRow, marginTop: 6 }}>
+                      <span><strong style={{ color: THEME.textFaint }}>Requested :</strong> {n.requested}</span>
+                      <span />
+                    </div>
+                    <button className="noti-btn" style={styles.notiBtn} onClick={() => navigate("/Noti")}>View All</button>
+                  </div>
+                ))}
+                <div style={{ height: 120, borderBottom: `1px solid ${THEME.border}` }} />
+              </div>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.sectionGroup}>
-              <h3 style={styles.subSection}>Client Information</h3>
+              <div style={styles.notiFooter} onClick={() => navigate("/Noti")}>Veiw All</div>
+            </div>
+          )}
 
-              <label style={styles.label}>Company Name *</label>
-              <input
-                name="companyName"
-                value={form.companyName}
-                onChange={handleChange}
-                style={styles.inputBox}
-                required
-              />
+          {/* Heading */}
+          <div style={styles.title}>Clients</div>
+          <div style={styles.breadcrumb}>
+            <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span> &nbsp;&gt;&nbsp; <span style={{ color: "#9CC3FF" }}>Add Client</span>
+          </div>
 
-              <label style={styles.label}>Contact Name</label>
-              <input
-                name="contactName"
-                value={form.contactName}
-                onChange={handleChange}
-                style={styles.inputBox}
-              />
-
-              <label style={styles.label}>Email</label>
-              <input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                style={styles.inputBox}
-              />
-
-              <label style={styles.label}>Phone Number</label>
-              <input
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                style={styles.inputBox}
-              />
-
-              <label style={styles.label}>Estimated Users</label>
+          {/* Form Card */}
+          <div style={styles.card}>
+            {/* Request Type pill select */}
+            <div style={styles.typeSelectWrap}>
               <select
-                name="estimatedUsers"
-                value={form.estimatedUsers}
-                onChange={handleChange}
-                style={styles.inputBox}
+                value={reqType}
+                onChange={(e) => setReqType(e.target.value)}
+                style={styles.typeSelect}
               >
-                <option>0 - 10</option>
-                <option>11 - 50</option>
-                <option>51 - 100</option>
-                <option>101+</option>
+                <option value="trial">Trial Request</option>
+                <option value="purchase">Purchase Request</option>
+                <option value="support">Support Request</option>
               </select>
+              <FiChevronDown style={styles.caret} />
             </div>
 
-            <div style={styles.sectionGroup}>
-              <h3 style={styles.subSection}>Internal Reference</h3>
-              <label style={styles.label}>Notes</label>
-              <textarea
-                name="notes"
-                value={form.notes}
-                onChange={handleChange}
-                style={{ ...styles.inputBox, height: 100 }}
-              />
+            {/* Row 1: First / Last / Email */}
+            <div style={styles.row}>
+              <div>
+                <div style={styles.label}>First Name</div>
+                <input value={form.firstName} onChange={(e) => patch("firstName", e.target.value)} style={styles.pillInput} />
+              </div>
+              <div>
+                <div style={styles.label}>Last Name</div>
+                <input value={form.lastName} onChange={(e) => patch("lastName", e.target.value)} style={styles.pillInput} />
+              </div>
+            </div>
+            <div style={styles.row}>
+              <div>
+                <div style={styles.label}>Email</div>
+                <input value={form.email} onChange={(e) => patch("email", e.target.value)} style={styles.pillInput} />
+              </div>
+              <div>
+                <div style={styles.label}>Phone</div>
+                <input value={form.phone} onChange={(e) => patch("phone", e.target.value)} style={styles.pillInput} />
+              </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-start", gap: 12 }}>
-              <button type="submit" style={styles.submitButton}>Add Client</button>
-              <button type="button" onClick={() => setForm({ companyName: "", contactName: "", email: "", phone: "", estimatedUsers: "0 - 10", notes: "" })} style={{ ...styles.submitButton, backgroundColor: "#64748b" }}>Clear</button>
+            {/* Row 2: Country / Company / Industry */}
+            <div style={styles.row}>
+              <div>
+                <div style={styles.label}>Country</div>
+                <input value={form.country} onChange={(e) => patch("country", e.target.value)} style={styles.pillInput} />
+              </div>
+              <div>
+                <div style={styles.label}>Company</div>
+                <input value={form.company} onChange={(e) => patch("company", e.target.value)} style={styles.pillInput} />
+              </div>
             </div>
-          </form>
+            <div style={styles.row}>
+              <div>
+                <div style={styles.label}>Industry</div>
+                <input value={form.industry} onChange={(e) => patch("industry", e.target.value)} style={styles.pillInput} />
+              </div>
+              <div>
+                <div style={styles.label}>Message</div>
+                <input value={form.message} onChange={(e) => patch("message", e.target.value)} style={styles.pillInput} />
+              </div>
+            </div>
+
+            {/* Row 3: Estimate User / Trial */}
+            <div style={styles.row}>
+              <div>
+                <div style={styles.label}>Estimate User</div>
+                <input value={form.estimateUser} onChange={(e) => patch("estimateUser", e.target.value)} style={styles.pillInput} />
+              </div>
+              <div>
+                <div style={styles.label}>Trial</div>
+                <input value={form.trialDays} onChange={(e) => patch("trialDays", e.target.value)} style={styles.pillInput} />
+              </div>
+            </div>
+
+            {/* Credentials Box */}
+            <div style={styles.credBox}>
+              <div style={styles.row}>
+                <div>
+                  <div style={styles.label}>Username</div>
+                  <div style={styles.inline}>
+                    <input value={form.username} onChange={(e) => patch("username", e.target.value)} style={styles.pillInput} />
+                    <button style={{ ...styles.smallBtn, ...styles.smallBtnBlue }} onClick={randomUsername}>Random Username</button>
+                  </div>
+                </div>
+                <div>
+                  <div style={styles.label}>Password</div>
+                  <div style={styles.inline}>
+                    <input value={form.password} onChange={(e) => patch("password", e.target.value)} style={styles.pillInput} />
+                    <button style={{ ...styles.smallBtn, ...styles.smallBtnGreen }} onClick={randomPassword}>Random Password</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={styles.actions}>
+              <button style={styles.btnPrimary} onClick={onCreate}>Create Client</button>
+              <button style={styles.btnGhost} onClick={() => navigate(-1)}>Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#003d80",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-  },
-  content: {
-    flex: 1,
-    backgroundColor: "#003d80",
-    padding: "30px",
-    flexDirection: "column",
-    overflowX: "hidden",
-    position: "relative",
-  },
-  topbar: {
-    backgroundColor: "#003d80",
-    padding: "12px 20px",
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    gap: 16,
-    color: "white",
-  },
-  searchBox: {
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: "#003d80",
-    border: "1px solid white",
-    borderRadius: 10,
-    padding: "4px 12px",
-    color: "#ffffff",
-  },
-  input: {
-    border: "none",
-    padding: "4px 8px",
-    outline: "none",
-    backgroundColor: "transparent",
-    color: "#ffffff",
-  },
-  notiPanel: {
-    position: "absolute",
-    top: 60,
-    right: 30,
-    backgroundColor: "white",
-    width: 300,
-    borderRadius: 10,
-    boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
-    zIndex: 1000,
-    maxHeight: 400,
-    overflowY: "auto",
-    border: "1px solid #94a3b8",
-  },
-  notiHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 16px",
-    borderBottom: "1px solid #ccc",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  notiItem: {
-    padding: "10px 16px",
-    borderBottom: "1px solid #f1f5f9",
-    fontSize: 14,
-  },
-  formContainer: {
-    paddingTop: 32,
-    paddingLeft: 30,
-    paddingRight: 30,
-    color: "white",
-  },
-  sectionTitle: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  sectionGroup: {
-    marginBottom: 32,
-    maxWidth: 600,
-  },
-  subSection: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-    color: "#ffffff",
-  },
-  label: {
-    fontWeight: "600",
-    fontSize: 14,
-    marginTop: 10,
-    display: "block",
-  },
-  inputBox: {
-    border: "1px solid #cbd5e1",
-    borderRadius: 6,
-    padding: "10px 14px",
-    fontSize: 14,
-    width: "100%",
-    boxSizing: "border-box",
-    marginTop: 6,
-  },
-  submitButton: {
-    backgroundColor: "#2563eb",
-    color: "white",
-    fontWeight: "bold",
-    padding: "10px 20px",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-  backButton: {
-    backgroundColor: "#1e40af",
-    color: "#ffffff",
-    padding: "6px 14px",
-    borderRadius: 6,
-    border: "none",
-    cursor: "pointer",
-    fontSize: 14,
-    marginBottom: 20,
-  },
-};
