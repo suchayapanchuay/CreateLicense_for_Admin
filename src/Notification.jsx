@@ -1,8 +1,9 @@
+// src/app/Notifications.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import Sidebar from "./SideBar";
 import { FiSearch, FiChevronDown } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "./SideBar";
 import { API_BASE } from "./config";
 
 const THEME = {
@@ -15,7 +16,6 @@ const THEME = {
   textFaint: "rgba(255,255,255,0.55)",
   accent: "#3B82F6",
 };
-
 const styles = {
   root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
   content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
@@ -42,79 +42,63 @@ const styles = {
   btnRow: { display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" },
   btnPrimary: { borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
   btnGhost: { borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text },
-  pagination: { display: "flex", justifyContent: "center", alignItems: "center", gap: 18, marginTop: 18 },
-  pageBtn: { width: 32, height: 32, borderRadius: 8, border: `1px solid ${THEME.border}`, display: "grid", placeItems: "center", color: THEME.textMut, cursor: "pointer" },
-  pageCurrent: { minWidth: 32, height: 32, borderRadius: 8, background: THEME.card, display: "grid", placeItems: "center", color: THEME.text, fontWeight: 800, border: `1px solid ${THEME.border}` },
 };
 
 function mapEventToCard(ev) {
-  const t = String(ev?.type || "").toLowerCase();
-
-  if (t === "trial_request") {
-    return {
-      id: `trial-${Date.now()}-${Math.random()}`,
-      type: "Free Trial",
-      firstName: ev.firstName || "",
-      lastName: ev.lastName || "",
-      email: ev.email || "",
-      phone: ev.phone || "",
-      company: ev.company || "",
-      industry: ev.industry || "",
-      country: ev.country || "",
-      message: ev.message || "",
-      raw: ev,
-    };
-  }
-
-  const meta = ev?.meta || {};
-  const [firstName, ...rest] = (ev?.name || "").split(" ");
-  const lastName = rest.join(" ");
-  return {
-    id: ev.order_code || `${Date.now()}-${Math.random()}`,
-    type: "Trial Request",
-    firstName: firstName || meta.firstName || "",
-    lastName: lastName || meta.lastName || "",
-    email: ev.email || meta.email || "",
-    phone: meta.phone || "",
-    company: meta.company || "",
-    industry: meta.industry || "",
-    country: meta.country || "",
-    message: meta.message || "",
+  const base = {
+    id: ev.id || `trial-${Date.now()}-${Math.random()}`,
+    type: "Free Trial",
+    firstName: ev.firstName || "",
+    lastName: ev.lastName || "",
+    email: ev.email || "",
+    phone: ev.phone || "",
+    company: ev.company || "",
+    industry: ev.industry || "",
+    country: ev.country || "",
+    message: ev.message || "",
+    created_at: ev.created_at || null,
     raw: ev,
   };
+  return base;
 }
 
 export default function Notifications() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
-
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
   const [items, setItems] = useState([]);
   const esRef = useRef(null);
   const retryRef = useRef({ tries: 0, timer: null });
 
+  // โหลดครั้งแรกจาก DB + subscribe SSE
   useEffect(() => {
+    fetch(`${API_BASE}/trial-requests`)
+      .then(r => r.json())
+      .then(data => setItems(data.map(mapEventToCard)))
+      .catch(err => {
+        console.error(err);
+        setErrorMsg("Failed to load initial items");
+      });
+
     openStream();
+
     const es = esRef.current;
-    const retryState = retryRef.current;
+    const retryState = retryRef.current; // ✅ copy ไป local
+
     return () => {
       if (es) es.close();
       if (retryState?.timer) clearTimeout(retryState.timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openStream() {
     try {
       setConnecting(true);
       setErrorMsg("");
-
-      const url = `${API_BASE}/admin/stream`; // ✅ ชี้ backend
-      const es = new EventSource(url);
+      const es = new EventSource(`${API_BASE}/admin/stream`);
       esRef.current = es;
 
       es.onopen = () => {
@@ -126,28 +110,9 @@ export default function Notifications() {
       es.addEventListener("trial_request", (e) => {
         try {
           const data = JSON.parse(e.data);
-          const withType = { type: "trial_request", ...data };
-          setItems((prev) => [mapEventToCard(withType), ...prev].slice(0, 200));
-        } catch {}
+          setItems(prev => [mapEventToCard(data), ...prev].slice(0, 300));
+        } catch (err) { console.error(err); }
       });
-
-      es.addEventListener("order_created", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          const withType = { type: "order_created", ...data };
-          setItems((prev) => [mapEventToCard(withType), ...prev].slice(0, 200));
-        } catch {}
-      });
-
-      es.onmessage = (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          const t = String(data?.type || "").toLowerCase();
-          if (t === "trial_request" || t === "order_created") {
-            setItems((prev) => [mapEventToCard(data), ...prev].slice(0, 200));
-          }
-        } catch {}
-      };
 
       es.onerror = () => {
         setConnected(false);
@@ -156,7 +121,7 @@ export default function Notifications() {
         if (retryRef.current.timer) clearTimeout(retryRef.current.timer);
         const n = Math.min(5, retryRef.current.tries + 1);
         retryRef.current.tries = n;
-        retryRef.current.timer = setTimeout(() => openStream(), n * 1000);
+        retryRef.current.timer = setTimeout(openStream, n * 1000);
       };
     } catch (err) {
       setConnected(false);
@@ -165,23 +130,20 @@ export default function Notifications() {
     }
   }
 
-  async function seedTrial() {
+  async function handleDelete(card) {
+    if (!card?.id) return;
+    if (!window.confirm("Delete this request?")) return;
     try {
-      const res = await fetch(`${API_BASE}/orders/_debug/seed-trial`, { method: "POST" });
-      if (!res.ok) {
-        const t = await res.text();
-        alert(`Seed failed: ${t}`);
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      alert(data?.seeded ? "Seeded trial product." : data?.message || "OK");
+      const res = await fetch(`${API_BASE}/trial-requests/${card.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(await res.text());
+      setItems(prev => prev.filter(x => x.id !== card.id));
     } catch (e) {
-      alert(e?.message || "Seed error");
+      alert(e?.message || "Delete failed");
     }
   }
 
   const filtered = useMemo(() => {
-    const list = items.filter((n) => {
+    const list = items.filter(n => {
       if (filter === "all") return true;
       if (filter === "trial") return String(n.type).toLowerCase().includes("trial");
       if (filter === "purchase") return String(n.type).toLowerCase().includes("purchase");
@@ -189,12 +151,9 @@ export default function Notifications() {
     });
     if (!q.trim()) return list;
     const kw = q.toLowerCase();
-    return list.filter((n) =>
-      [n.firstName, n.lastName, n.email, n.company, n.industry, n.country, n.message]
-        .join(" ")
-        .toLowerCase()
-        .includes(kw)
-    );
+    return list.filter(n => [
+      n.firstName, n.lastName, n.email, n.company, n.industry, n.country, n.message
+    ].join(" ").toLowerCase().includes(kw));
   }, [items, filter, q]);
 
   return (
@@ -205,7 +164,7 @@ export default function Notifications() {
           <div style={styles.topbar}>
             <div style={styles.searchBox}>
               <FiSearch />
-              <input placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} style={styles.searchInput}/>
+              <input placeholder="Search" value={q} onChange={e => setQ(e.target.value)} style={styles.searchInput} />
             </div>
             <IoMdNotificationsOutline size={24} color={THEME.text} />
           </div>
@@ -230,23 +189,22 @@ export default function Notifications() {
               <FiChevronDown style={styles.filterCaret} />
             </div>
 
-            <button style={styles.btnGhost} onClick={seedTrial}>Seed Trial Product</button>
-            <button style={styles.btnGhost} onClick={() => setItems([])}>Clear</button>
-            <button style={styles.btnGhost} onClick={() => { if (esRef.current) esRef.current.close(); openStream(); }}>
-              Reconnect
-            </button>
+            <button style={styles.btnGhost} onClick={() => setItems([])}>Clear (local)</button>
+            <button style={styles.btnGhost} onClick={() => {
+              fetch(`${API_BASE}/trial-requests`)
+                .then(r=>r.json())
+                .then(d=>setItems(d.map(mapEventToCard)));
+            }}>Reload</button>
           </div>
 
           {filtered.length === 0 ? (
             <div style={{ color: THEME.textFaint, fontStyle: "italic" }}>
-              {items.length === 0
-                ? "รอสตรีมแจ้งเตือนจากลูกค้า…"
-                : "ไม่พบรายการที่ตรงกับเงื่อนไขการค้นหา/ฟิลเตอร์"}
+              {items.length === 0 ? "รอข้อมูลจากลูกค้า… หรือรีเฟรชหน้านี้" : "ไม่พบรายการตามเงื่อนไข"}
             </div>
           ) : (
             filtered.map((n) => (
               <div key={n.id} style={styles.notiCard}>
-                <div style={styles.typeTitle}>{n.type}</div>
+                <div style={styles.typeTitle}>Free Trial</div>
 
                 <div style={styles.grid2}>
                   <div><div style={styles.label}>First Name</div><div style={styles.pill}>{n.firstName || "-"}</div></div>
@@ -270,17 +228,11 @@ export default function Notifications() {
 
                 <div style={styles.btnRow}>
                   <button style={styles.btnPrimary} onClick={() => navigate("/client/add")}>Create Client</button>
-                  <button style={styles.btnGhost} onClick={() => alert(`Order: ${n.raw?.order_code || "-"}`)}>View Order</button>
+                  <button style={styles.btnGhost} onClick={() => handleDelete(n)}>Delete</button>
                 </div>
               </div>
             ))
           )}
-
-          <div style={styles.pagination}>
-            <div style={styles.pageBtn}>‹</div>
-            <div style={styles.pageCurrent}>1</div>
-            <div style={styles.pageBtn}>›</div>
-          </div>
         </div>
       </div>
     </div>
