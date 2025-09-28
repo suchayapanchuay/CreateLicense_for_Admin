@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/app/AddClient.jsx
+import React, { useEffect, useState } from "react";
 import Sidebar from "./SideBar";
-import { FiSearch, FiChevronDown } from "react-icons/fi";
-import { IoMdNotificationsOutline } from "react-icons/io";
-import { IoClose } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { FiChevronDown } from "react-icons/fi";
+import { useNavigate, useLocation } from "react-router-dom";
+import Topbar from "./Topbar";
+import { API_BASE } from "./config";
 
 /* THEME */
 const THEME = {
@@ -17,22 +18,11 @@ const THEME = {
   accent: "#3B82F6",
 };
 
-/* MOCK NOTIFICATIONS */
-const NOTI_ITEMS = [
-  { id: 1, type: "trial", title: "Trial Request", client: "Client A", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 15, read: false },
-  { id: 2, type: "trial", title: "Trial Request", client: "Client B", product: "Smart Audit", requested: "31 Aug 2025", durationDays: 7,  read: true  },
-  { id: 3, type: "purchase", title: "Purchase Request", client: "Client C", product: "Smart Audit", requested: "31 Aug 2025", read: false },
-];
-
 /* STYLES */
 const styles = {
   root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
   content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
   stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
-
-  topbar: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16 },
-  searchBox: { display: "flex", alignItems: "center", gap: 8, border: `1px solid ${THEME.border}`, padding: "6px 10px", borderRadius: 10, minWidth: 200, color: THEME.text },
-  searchInput: { border: "none", outline: "none", background: "transparent", color: THEME.text, width: "100%" },
 
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 6px" },
   breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 12 },
@@ -40,18 +30,12 @@ const styles = {
   card: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 18 },
   row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 12 },
   label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
-  pillInput: {
-    width: "80%", background: "rgba(255,255,255,0.06)", color: THEME.text,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
-  },
+  pillInput: { width: "80%", background: "rgba(255,255,255,0.06)", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none" },
   inline: { display: "flex", gap: 10, alignItems: "center" },
 
-  typeSelectWrap: { position: "relative", width: 160, marginBottom: 12 },
-  typeSelect: {
-    width: "100%", appearance: "none", background: "rgba(255,255,255,0.08)", color: THEME.text,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "8px 34px 8px 12px", fontWeight: 700, cursor: "pointer"
-  },
-  caret: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: THEME.textFaint, pointerEvents: "none" },
+  typeSelectWrap: { position: "relative", width: 220, marginBottom: 12 },
+  typeSelect: { width: "100%", appearance: "none", background: "rgba(255,255,255,0.08)", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 12px", fontWeight: 700, cursor: "pointer" },
+  caret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: THEME.textFaint, pointerEvents: "none" },
 
   credBox: { border: `1px solid ${THEME.border}`, borderRadius: 10, padding: 16, marginTop: 12 },
   smallBtn: { border: "none", padding: "8px 10px", fontWeight: 700, borderRadius: 8, cursor: "pointer" },
@@ -61,44 +45,47 @@ const styles = {
   actions: { display: "flex", gap: 10, marginTop: 18 },
   btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
   btnGhost: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text },
-
-  /* Notifications */
-  notiPanelWrap: { position: "absolute", top: 90, right: 36, width: 560, background: "#0E2240", border: `1px solid ${THEME.border}`, borderRadius: 10, boxShadow: "0 14px 34px rgba(0,0,0,.4)", color: THEME.text, zIndex: 60, overflow: "hidden" },
-  notiHead: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${THEME.border}`, fontWeight: 900, fontSize: 22 },
-  notiSelectWrap: { position: "relative", display: "inline-block" },
-  notiSelect: { appearance: "none", background: "#183154", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 14px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
-  selectCaret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: THEME.textMut, fontSize: 18 },
-  notiClose: { cursor: "pointer" },
-  notiList: { maxHeight: 560, overflowY: "auto" },
-  notiItem: { padding: "16px", borderBottom: `1px solid ${THEME.border}` },
-  notiBadge: { fontSize: 13, color: THEME.textMut, marginBottom: 6 },
-  notiClient: { fontSize: 22, fontWeight: 800, marginBottom: 4, color: THEME.text },
-  notiMetaRow: { display: "flex", color: THEME.textFaint, fontSize: 14, marginTop: 8 ,justifyContent: "flex-start", gap: "4px"},
-  notiBtn: { marginTop: 10, border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, padding: "8px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer" },
-  notiFooter: { display: "flex", justifyContent: "flex-end", padding: "14px 18px", color: "#7DD3FC", fontWeight: 800, cursor: "pointer" },
 };
+
+/* helper แปลงข้อมูลจาก API -> ฟอร์ม */
+function mapTrialToForm(d) {
+  return {
+    reqType: "trial",
+    firstName: d.firstName || "",
+    lastName: d.lastName || "",
+    email: d.email || "",
+    phone: d.phone || "",
+    company: d.company || "",
+    industry: d.industry || "",
+    country: d.country || "",
+    message: d.message || "",
+    estimateUser: d.estimateUser || "",
+    trialDays: d.durationDays ? `${d.durationDays} days` : "",
+  };
+}
+function mapOrderToForm(d) {
+  const [fn, ...rest] = (d.customer_name || "").split(" ");
+  return {
+    reqType: "purchase",
+    firstName: fn || "",
+    lastName: rest.join(" "),
+    email: d.customer_email || "",
+    phone: d.phone || "",
+    company: d.company || "",
+    industry: d.industry || "",
+    country: d.country || "",
+    message: d.note || "",
+    estimateUser: d.estimateUser || "",
+    trialDays: "",
+  };
+}
 
 export default function AddClient() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  /* Notifications */
-  const [showNoti, setShowNoti] = useState(false);
-  const [notiFilter, setNotiFilter] = useState("all");
-  const notiRef = useRef(null);
-  useEffect(() => {
-    const onClick = (e) => { if (notiRef.current && !notiRef.current.contains(e.target)) setShowNoti(false); };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-  const filteredNoti = NOTI_ITEMS.filter((n) => {
-    if (notiFilter === "all") return true;
-    if (notiFilter === "unread") return !n.read;
-    if (notiFilter === "trial") return n.type === "trial";
-    if (notiFilter === "purchase") return n.type === "purchase";
-    return true;
-  });
+  const [search, setSearch] = useState("");
 
-  /* Form */
   const [reqType, setReqType] = useState("trial");
   const [form, setForm] = useState({
     firstName: "Suchaya",
@@ -115,6 +102,51 @@ export default function AddClient() {
     password: "U12S36",
   });
 
+  // พรีฟิลทันทีจาก state (กรณีกดมาจาก Notifications)
+  useEffect(() => {
+    const p = location.state?.prefill || null;
+    if (p) {
+      if (p.reqType) setReqType(p.reqType);
+      setForm((f) => ({
+        ...f,
+        ...p,
+        username: p.username || f.username,
+        password: p.password || f.password,
+      }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ดึงข้อมูลจริงจาก API ตาม source/sourceId แล้วอัปเดตฟอร์ม (ข้อมูลล่าสุด)
+  useEffect(() => {
+    const source = location.state?.source;    // "trial" | "order"
+    const sourceId = location.state?.sourceId;
+    if (!source || !sourceId) return;
+
+    (async () => {
+      try {
+        const url = source === "order" ? `${API_BASE}/orders/${sourceId}` : `${API_BASE}/trial-requests/${sourceId}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        const mapped = source === "order" ? mapOrderToForm(data) : mapTrialToForm(data);
+
+        setReqType(mapped.reqType);
+        setForm((f) => ({
+          ...f,
+          ...mapped,
+          username: f.username, // ไม่ทับ user/pass ที่ผู้ใช้สุ่มในหน้า
+          password: f.password,
+        }));
+      } catch (e) {
+        console.error("Fetch source data failed:", e?.message || e);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const randomUsername = () => {
@@ -130,7 +162,13 @@ export default function AddClient() {
   };
 
   const onCreate = () => {
-    const payload = { requestType: reqType, ...form };
+    const payload = {
+      requestType: reqType,
+      search,
+      ...form,
+      source: location.state?.source || null,
+      sourceId: location.state?.sourceId || null,
+    };
     console.log("Create Client (mock) →", payload);
     alert("Client created (mock). ดู payload ใน console");
   };
@@ -141,74 +179,22 @@ export default function AddClient() {
 
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* Topbar */}
-          <div style={styles.topbar}>
-            <div style={styles.searchBox}>
-              <FiSearch />
-              <input placeholder="Search" style={styles.searchInput} />
-            </div>
-            <div onClick={() => setShowNoti((v) => !v)} style={{ cursor: "pointer" }}>
-              <IoMdNotificationsOutline size={24} color={THEME.text} />
-            </div>
-          </div>
+          <Topbar
+            placeholder="Search clients"
+            onSearchChange={setSearch}
+            defaultFilter="all"
+            onViewAllPath="/Noti"
+          />
 
-          {/* Notifications Panel */}
-          {showNoti && (
-            <div style={styles.notiPanelWrap} ref={notiRef}>
-              <div style={styles.notiHead}>
-                <span>Notifications ({NOTI_ITEMS.length})</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={styles.notiSelectWrap}>
-                    <select value={notiFilter} onChange={(e) => setNotiFilter(e.target.value)} style={styles.notiSelect}>
-                      <option value="all">All</option>
-                      <option value="unread">Unread</option>
-                      <option value="trial">Trial</option>
-                      <option value="purchase">Purchase</option>
-                    </select>
-                    <FiChevronDown style={styles.selectCaret} />
-                  </div>
-                  <IoClose size={22} onClick={() => setShowNoti(false)} style={styles.notiClose} />
-                </div>
-              </div>
-
-              <div style={styles.notiList}>
-                {filteredNoti.map((n) => (
-                  <div key={n.id} style={styles.notiItem}>
-                    <div style={styles.notiBadge}>{n.title}</div>
-                    <div style={styles.notiClient}>{n.client}</div>
-                    <div style={styles.notiMetaRow}>
-                      <span><strong style={{ color: THEME.textFaint }}>Product :</strong> {n.product}</span>
-                      {n.durationDays ? <span><strong style={{ color: THEME.textFaint }}>Duration :</strong> {n.durationDays} days</span> : <span />}
-                    </div>
-                    <div style={{ ...styles.notiMetaRow, marginTop: 6 }}>
-                      <span><strong style={{ color: THEME.textFaint }}>Requested :</strong> {n.requested}</span>
-                      <span />
-                    </div>
-                    <button className="noti-btn" style={styles.notiBtn} onClick={() => navigate("/Noti")}>View All</button>
-                  </div>
-                ))}
-                <div style={{ height: 120, borderBottom: `1px solid ${THEME.border}` }} />
-              </div>
-
-              <div style={styles.notiFooter} onClick={() => navigate("/Noti")}>Veiw All</div>
-            </div>
-          )}
-
-          {/* Heading */}
-          <div style={styles.title}>Clients</div>
+          <div style={styles.title}>Add Client</div>
           <div style={styles.breadcrumb}>
-            <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span> &nbsp;&gt;&nbsp; <span style={{ color: "#9CC3FF" }}>Add Client</span>
+            <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span>
+            &nbsp;&gt;&nbsp; <span style={{ color: "#9CC3FF" }}>Add Client</span>
           </div>
 
-          {/* Form Card */}
           <div style={styles.card}>
-            {/* Request Type pill select */}
             <div style={styles.typeSelectWrap}>
-              <select
-                value={reqType}
-                onChange={(e) => setReqType(e.target.value)}
-                style={styles.typeSelect}
-              >
+              <select value={reqType} onChange={(e) => setReqType(e.target.value)} style={styles.typeSelect}>
                 <option value="trial">Trial Request</option>
                 <option value="purchase">Purchase Request</option>
                 <option value="support">Support Request</option>
@@ -216,7 +202,6 @@ export default function AddClient() {
               <FiChevronDown style={styles.caret} />
             </div>
 
-            {/* Row 1: First / Last / Email */}
             <div style={styles.row}>
               <div>
                 <div style={styles.label}>First Name</div>
@@ -227,6 +212,7 @@ export default function AddClient() {
                 <input value={form.lastName} onChange={(e) => patch("lastName", e.target.value)} style={styles.pillInput} />
               </div>
             </div>
+
             <div style={styles.row}>
               <div>
                 <div style={styles.label}>Email</div>
@@ -238,7 +224,6 @@ export default function AddClient() {
               </div>
             </div>
 
-            {/* Row 2: Country / Company / Industry */}
             <div style={styles.row}>
               <div>
                 <div style={styles.label}>Country</div>
@@ -249,6 +234,7 @@ export default function AddClient() {
                 <input value={form.company} onChange={(e) => patch("company", e.target.value)} style={styles.pillInput} />
               </div>
             </div>
+
             <div style={styles.row}>
               <div>
                 <div style={styles.label}>Industry</div>
@@ -260,7 +246,6 @@ export default function AddClient() {
               </div>
             </div>
 
-            {/* Row 3: Estimate User / Trial */}
             <div style={styles.row}>
               <div>
                 <div style={styles.label}>Estimate User</div>
@@ -272,7 +257,6 @@ export default function AddClient() {
               </div>
             </div>
 
-            {/* Credentials Box */}
             <div style={styles.credBox}>
               <div style={styles.row}>
                 <div>
@@ -292,7 +276,6 @@ export default function AddClient() {
               </div>
             </div>
 
-            {/* Actions */}
             <div style={styles.actions}>
               <button style={styles.btnPrimary} onClick={onCreate}>Create Client</button>
               <button style={styles.btnGhost} onClick={() => navigate(-1)}>Cancel</button>
