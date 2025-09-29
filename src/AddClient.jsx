@@ -1,5 +1,5 @@
 // src/app/AddClient.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Sidebar from "./SideBar";
 import { FiChevronDown } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -16,6 +16,9 @@ const THEME = {
   textMut: "rgba(255,255,255,0.70)",
   textFaint: "rgba(255,255,255,0.55)",
   accent: "#3B82F6",
+  warn: "#FCD34D",
+  danger: "#F87171",
+  success: "#34D399",
 };
 
 /* STYLES */
@@ -45,39 +48,24 @@ const styles = {
   actions: { display: "flex", gap: 10, marginTop: 18 },
   btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
   btnGhost: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text },
+
+  banner: (bg) => ({ background: bg, color: "#062033", borderRadius: 10, padding: "10px 12px", fontWeight: 700, marginBottom: 12 }),
 };
 
-/* helper แปลงข้อมูลจาก API -> ฟอร์ม */
-function mapTrialToForm(d) {
-  return {
-    reqType: "trial",
-    firstName: d.firstName || "",
-    lastName: d.lastName || "",
-    email: d.email || "",
-    phone: d.phone || "",
-    company: d.company || "",
-    industry: d.industry || "",
-    country: d.country || "",
-    message: d.message || "",
-    estimateUser: d.estimateUser || "",
-    trialDays: d.durationDays ? `${d.durationDays} days` : "",
-  };
+/* helper */
+function parseDays(s) {
+  if (!s) return null;
+  const m = String(s).match(/\d+/);
+  return m ? Number(m[0]) : null;
 }
-function mapOrderToForm(d) {
-  const [fn, ...rest] = (d.customer_name || "").split(" ");
-  return {
-    reqType: "purchase",
-    firstName: fn || "",
-    lastName: rest.join(" "),
-    email: d.customer_email || "",
-    phone: d.phone || "",
-    company: d.company || "",
-    industry: d.industry || "",
-    country: d.country || "",
-    message: d.note || "",
-    estimateUser: d.estimateUser || "",
-    trialDays: "",
-  };
+async function postJSON(url, body) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
+  return res.json();
 }
 
 export default function AddClient() {
@@ -85,42 +73,40 @@ export default function AddClient() {
   const location = useLocation();
 
   const [search, setSearch] = useState("");
-
   const [reqType, setReqType] = useState("trial");
   const [form, setForm] = useState({
-    firstName: "Suchaya",
-    lastName: "Panchuai",
-    email: "suchaya19@gmail.com",
-    phone: "0631234567",
-    company: "BlankSpace",
-    industry: "Software Engineer",
-    country: "Thailand",
-    estimateUser: "10",
-    message: "Please contact us within this month.",
-    trialDays: "15 days",
-    username: "User101",
-    password: "U12S36",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    industry: "",
+    country: "",
+    estimateUser: "",
+    message: "",
+    trialDays: "",
+    username: "",
+    password: "",
   });
 
-  // พรีฟิลทันทีจาก state (กรณีกดมาจาก Notifications)
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [okMsg, setOkMsg] = useState("");
+
+  // prefill จาก Notifications (state.prefill)
   useEffect(() => {
     const p = location.state?.prefill || null;
     if (p) {
       if (p.reqType) setReqType(p.reqType);
-      setForm((f) => ({
-        ...f,
-        ...p,
-        username: p.username || f.username,
-        password: p.password || f.password,
-      }));
+      setForm((f) => ({ ...f, ...p, username: p.username || f.username, password: p.password || f.password }));
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ดึงข้อมูลจริงจาก API ตาม source/sourceId แล้วอัปเดตฟอร์ม (ข้อมูลล่าสุด)
+  // ดึงข้อมูลล่าสุดจาก source/sourceId
   useEffect(() => {
-    const source = location.state?.source;    // "trial" | "order"
+    const source = location.state?.source; // "trial" | "order"
     const sourceId = location.state?.sourceId;
     if (!source || !sourceId) return;
 
@@ -131,20 +117,45 @@ export default function AddClient() {
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
 
-        const mapped = source === "order" ? mapOrderToForm(data) : mapTrialToForm(data);
+        const mapped =
+          source === "order"
+            ? (() => {
+                const [fn, ...rest] = (data.customer_name || "").split(" ");
+                return {
+                  reqType: "purchase",
+                  firstName: fn || "",
+                  lastName: rest.join(" "),
+                  email: data.customer_email || "",
+                  phone: data.phone || "",
+                  company: data.company || "",
+                  industry: "-",
+                  country: "-",
+                  message: data.note || "",
+                  estimateUser: "",
+                  trialDays: "",
+                };
+              })()
+            : {
+                reqType: "trial",
+                firstName: data.firstName || "",
+                lastName: data.lastName || "",
+                email: data.email || "",
+                phone: data.phone || "",
+                company: data.company || "",
+                industry: data.industry || "",
+                country: data.country || "",
+                message: data.message || "",
+                estimateUser: "",
+                trialDays: data.durationDays ? `${data.durationDays} days` : "",
+              };
 
         setReqType(mapped.reqType);
-        setForm((f) => ({
-          ...f,
-          ...mapped,
-          username: f.username, // ไม่ทับ user/pass ที่ผู้ใช้สุ่มในหน้า
-          password: f.password,
-        }));
+        setForm((f) => ({ ...f, ...mapped, username: f.username, password: f.password }));
       } catch (e) {
         console.error("Fetch source data failed:", e?.message || e);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const patch = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -157,40 +168,95 @@ export default function AddClient() {
   const randomPassword = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     let pw = "";
-    for (let i = 0; i < 6; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+    for (let i = 0; i < 10; i++) pw += chars[Math.floor(Math.random() * chars.length)];
     patch("password", pw);
   };
 
-  const onCreate = () => {
+  const required = useMemo(
+    () => [
+      ["firstName", "First Name"],
+      ["lastName", "Last Name"],
+      ["email", "Email"],
+      ["username", "Username"],
+      ["password", "Password"],
+    ],
+    []
+  );
+
+  function validate() {
+    const miss = required.filter(([k]) => !String(form[k] || "").trim()).map(([, label]) => label);
+    if (miss.length) {
+      setError(`กรอกข้อมูลให้ครบ: ${miss.join(", ")}`);
+      return false;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) {
+      setError("อีเมลไม่ถูกต้อง");
+      return false;
+    }
+    setError("");
+    return true;
+  }
+
+  async function onCreate() {
+    if (submitting) return;
+    if (!validate()) return;
+    setSubmitting(true);
+    setOkMsg("");
+    setError("");
+
     const payload = {
       requestType: reqType,
       search,
-      ...form,
       source: location.state?.source || null,
-      sourceId: location.state?.sourceId || null,
+      sourceId: location.state?.sourceId ? String(location.state.sourceId) : null,
+      profile: {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        company: form.company,
+        industry: form.industry,
+        country: form.country,
+        message: form.message,
+        estimateUser: form.estimateUser ? Number(form.estimateUser) : null,
+      },
+      credentials: { username: form.username, password: form.password },
+      trial: { days: parseDays(form.trialDays) },
     };
-    console.log("Create Client (mock) →", payload);
-    alert("Client created (mock). ดู payload ใน console");
-  };
+
+    try {
+      // NOTE: ใช้ API_BASE ที่รวม /api ไว้แล้ว
+      await postJSON(`${API_BASE}/clients`, payload);
+
+      setOkMsg("สร้าง Client สำเร็จ");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      // ถ้าอยากรีไดเรกต์อัตโนมัติหลังสำเร็จ:
+      // setTimeout(() => navigate("/client", { state: { flash: "Client created" } }), 1200);
+    } catch (e) {
+      const msg = String(e?.message || e);
+      if (/409/.test(msg) || /duplicate/i.test(msg)) setError("อีเมลหรือชื่อผู้ใช้ซ้ำในระบบ");
+      else if (/NetworkError|Failed to fetch|CORS/.test(msg)) setError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (อาจเป็น CORS/เครือข่าย)");
+      else setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div style={styles.root}>
       <Sidebar />
-
       <div style={styles.content}>
         <div style={styles.stage}>
-          <Topbar
-            placeholder="Search clients"
-            onSearchChange={setSearch}
-            defaultFilter="all"
-            onViewAllPath="/Noti"
-          />
-
+          <Topbar placeholder="Search clients" onSearchChange={setSearch} defaultFilter="all" onViewAllPath="/Noti" />
           <div style={styles.title}>Add Client</div>
           <div style={styles.breadcrumb}>
             <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span>
             &nbsp;&gt;&nbsp; <span style={{ color: "#9CC3FF" }}>Add Client</span>
           </div>
+
+          {!!error && <div style={styles.banner(THEME.warn)}>{error}</div>}
+          {!!okMsg && <div style={styles.banner(THEME.success)}>{okMsg}</div>}
 
           <div style={styles.card}>
             <div style={styles.typeSelectWrap}>
@@ -253,12 +319,12 @@ export default function AddClient() {
               </div>
               <div>
                 <div style={styles.label}>Trial</div>
-                <input value={form.trialDays} onChange={(e) => patch("trialDays", e.target.value)} style={styles.pillInput} />
+                <input value={form.trialDays} onChange={(e) => patch("trialDays", e.target.value)} style={styles.pillInput} placeholder="e.g. 15 days" />
               </div>
             </div>
 
             <div style={styles.credBox}>
-              <div style={styles.row}>
+              <div className="row" style={styles.row}>
                 <div>
                   <div style={styles.label}>Username</div>
                   <div style={styles.inline}>
@@ -277,8 +343,10 @@ export default function AddClient() {
             </div>
 
             <div style={styles.actions}>
-              <button style={styles.btnPrimary} onClick={onCreate}>Create Client</button>
-              <button style={styles.btnGhost} onClick={() => navigate(-1)}>Cancel</button>
+              <button style={{ ...styles.btnPrimary, opacity: submitting ? 0.7 : 1 }} onClick={onCreate} disabled={submitting}>
+                {submitting ? "Creating..." : "Create Client"}
+              </button>
+              <button style={styles.btnGhost} onClick={() => navigate(-1)} disabled={submitting}>Cancel</button>
             </div>
           </div>
         </div>

@@ -1,8 +1,10 @@
+// src/app/Clients.jsx
 import React, { useMemo, useState } from "react";
 import Sidebar from "./SideBar";
 import { FiChevronDown, FiEye } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import Topbar from "./Topbar";
+import { API_BASE } from "./config";
 
 /* -------- THEME -------- */
 const THEME = {
@@ -15,7 +17,7 @@ const THEME = {
   accent: "#3B82F6",
 };
 
-/* -------- STYLES (ตัดส่วน noti/topbar เดิมออก) -------- */
+/* -------- STYLES -------- */
 const styles = {
   root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
   content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
@@ -46,7 +48,7 @@ const styles = {
   header: {
     background: "rgba(255,255,255,0.06)",
     display: "grid",
-    gridTemplateColumns: "2.6fr 2fr 2.6fr 1.2fr 1fr",
+    gridTemplateColumns: "2.6fr 2fr 2.6fr 1.2fr 1fr", // Name | Company | Email | Type | Actions
     padding: "12px 16px",
     color: THEME.text,
     fontWeight: 700,
@@ -66,18 +68,32 @@ const styles = {
   companyCol: { color: THEME.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   email: { color: THEME.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
 
-  statusBadge: (type) => ({
-    display: "inline-block", padding: "6px 10px", borderRadius: 999, fontWeight: 700, fontSize: 12,
-    color: type === "active" ? "#0C2712" : "#1E293B",
-    background: type === "active" ? "rgba(163,230,53,0.8)" : "rgba(148,163,184,0.6)",
-  }),
+  typeBadge: (t) => {
+    const map = {
+      trial: { bg: "rgba(59,130,246,0.25)", fg: "#CFE1FF" },
+      purchase: { bg: "rgba(16,185,129,0.25)", fg: "#CFFDEA" },
+      support: { bg: "rgba(234,179,8,0.25)", fg: "#FFF6C7" },
+      default: { bg: "rgba(148,163,184,0.25)", fg: "#E2E8F0" },
+    };
+    const c = map[t] || map.default;
+    return {
+      display: "inline-block",
+      padding: "6px 10px",
+      borderRadius: 999,
+      fontWeight: 700,
+      fontSize: 12,
+      background: c.bg,
+      color: c.fg,
+      textTransform: "capitalize",
+    };
+  },
   eyeBtn: {
     width: 34, height: 34, display: "grid", placeItems: "center",
     borderRadius: "999px", border: `1px solid ${THEME.border}`,
     background: "transparent", color: THEME.text, cursor: "pointer",
   },
 
-  /* pagination */
+  /* pagination (placeholder) */
   pagination: { display: "flex", justifyContent: "center", alignItems: "center", gap: 18, marginTop: 18 },
   pageBtn: {
     width: 32, height: 32, borderRadius: 8, border: `1px solid ${THEME.border}`,
@@ -91,30 +107,64 @@ const styles = {
   },
 };
 
-/* -------- MOCK DATA -------- */
-const MOCK_CLIENTS = [
-  { id: 1, name: "John Doe",  company: "Acme Corp.",          email: "johndce@acme.co",  status: "active" },
-  { id: 2, name: "Emma Smith",company: "Beta Systems",        email: "emma.smith@beta",  status: "inactive" },
-  { id: 3, name: "Liam Johnson", company: "Gamma Innovations",email: "liam@gamma.com",   status: "active" },
-];
+/* -------- HELPERS -------- */
+function normalizeClient(c) {
+  const fn = c.firstName ?? c.first_name ?? "";
+  const ln = c.lastName ?? c.last_name ?? "";
+  return {
+    id: c.id,
+    name: (fn || ln) ? `${fn} ${ln}`.trim() : (c.name || "-"),
+    company: c.company || "-",
+    email: c.email || "-",
+    type: (c.requestType ?? c.request_type ?? "-"),
+    created_at: c.created_at || null,
+    raw: c,
+  };
+}
 
 export default function Clients() {
   const navigate = useNavigate();
 
-  /* search/filter clients */
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all"); // trial | purchase | support
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function loadClients() {
+    try {
+      setLoading(true);
+      setErr("");
+      const res = await fetch(`${API_BASE}/clients`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const list = Array.isArray(data) ? data.map(normalizeClient) : [];
+      setClients(list);
+    } catch (e) {
+      setErr(e?.message || "Failed to load clients");
+      setClients([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  React.useEffect(() => {
+    loadClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() => {
-    return MOCK_CLIENTS.filter((c) => {
+    const kw = search.trim().toLowerCase();
+    return clients.filter((c) => {
       const hit =
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.company.toLowerCase().includes(search.toLowerCase()) ||
-        c.email.toLowerCase().includes(search.toLowerCase());
-      const statusOK = statusFilter === "all" ? true : c.status === statusFilter;
-      return hit && statusOK;
+        !kw ||
+        c.name.toLowerCase().includes(kw) ||
+        c.company.toLowerCase().includes(kw) ||
+        c.email.toLowerCase().includes(kw);
+      const typeOK = typeFilter === "all" ? true : (c.type === typeFilter);
+      return hit && typeOK;
     });
-  }, [search, statusFilter]);
+  }, [clients, search, typeFilter]);
 
   return (
     <div style={styles.root}>
@@ -122,10 +172,10 @@ export default function Clients() {
 
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* ใช้ Topbar ที่รีใช้ซ้ำได้ทุกหน้า */}
+          {/* Topbar รีใช้ซ้ำสำหรับช่องค้นหา */}
           <Topbar
             placeholder="Search clients"
-            onSearchChange={(text) => setSearch(text)}
+            onSearchChange={setSearch}
             defaultFilter="all"
             onViewAllPath="/Noti"
           />
@@ -137,23 +187,31 @@ export default function Clients() {
             <div style={styles.leftGroup}>
               <div style={styles.selectWrap}>
                 <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
                   style={styles.select}
                 >
-                  <option value="all">Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="all">All types</option>
+                  <option value="trial">Trial</option>
+                  <option value="purchase">Purchase</option>
+                  <option value="support">Support</option>
                 </select>
                 <FiChevronDown style={styles.selectCaret} />
               </div>
             </div>
 
             <div style={styles.rightGroup}>
-              <button style={styles.btnPrimary} onClick={() => navigate("/create")}>Create License</button>
-              <button style={{ ...styles.btnPrimary, background: "#1983E6" }} onClick={() => navigate("/client/add")}>+ Add Client</button>
+              <button style={styles.btn} onClick={loadClients} disabled={loading}>
+                {loading ? "Loading..." : "Reload"}
+              </button>
+              <button style={styles.btnPrimary} onClick={() => navigate("/client/add")}>+ Add Client</button>
             </div>
           </div>
+
+          {/* error / empty states */}
+          {err ? (
+            <div style={{ color: "#FCA5A5", marginBottom: 12, fontWeight: 700 }}>{err}</div>
+          ) : null}
 
           {/* table */}
           <div style={styles.tableWrap}>
@@ -161,44 +219,50 @@ export default function Clients() {
               <div>Client Name</div>
               <div>Company</div>
               <div>Email</div>
-              <div>Status</div>
+              <div>Type</div>
               <div>Actions</div>
             </div>
 
-            {filtered.map((c) => (
-              <div key={c.id} style={styles.row}>
-                <div style={styles.clientCell}>
-                  <div style={styles.clientName}>{c.name}</div>
-                  <div style={styles.clientCompanyLink} title={c.company}>
-                    {c.company}
+            {filtered.length === 0 ? (
+              <div style={{ padding: 16, color: THEME.textMut }}>
+                {loading ? "Loading..." : "No clients found"}
+              </div>
+            ) : (
+              filtered.map((c) => (
+                <div key={c.id} style={styles.row}>
+                  <div style={styles.clientCell}>
+                    <div style={styles.clientName}>{c.name}</div>
+                    <div style={styles.clientCompanyLink} title={c.company}>
+                      {c.company}
+                    </div>
+                  </div>
+
+                  <div style={styles.companyCol} title={c.company}>{c.company}</div>
+                  <div style={styles.email} title={c.email}>{c.email}</div>
+
+                  <div>
+                    <span style={styles.typeBadge(c.type)}>{c.type || "-"}</span>
+                  </div>
+
+                  <div>
+                    <button
+                      style={styles.eyeBtn}
+                      onClick={() => navigate(`/client-details/${c.id}`)}
+                      title="View details"
+                    >
+                      <FiEye />
+                    </button>
                   </div>
                 </div>
-
-                <div style={styles.companyCol}>{c.company}</div>
-                <div style={styles.email} title={c.email}>{c.email}</div>
-
-                <div>
-                  <span style={styles.statusBadge(c.status)}>{c.status === "active" ? "Active" : "Inactive"}</span>
-                </div>
-
-                <div>
-                  {/* แก้ navigate ให้เป็นพาธจริง ไม่ใช่ :id ตายตัว */}
-                  <button
-                    style={styles.eyeBtn}
-                    onClick={() => navigate(`/client-details/${c.id}`)}
-                  >
-                    <FiEye />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
-          {/* pagination */}
+          {/* pagination (placeholder – ถ้า backend ยังไม่รองรับ) */}
           <div style={styles.pagination}>
-            <div style={styles.pageBtn}>‹</div>
+            <div style={styles.pageBtn} aria-disabled>‹</div>
             <div style={styles.pageCurrent}>1</div>
-            <div style={styles.pageBtn}>›</div>
+            <div style={styles.pageBtn} aria-disabled>›</div>
           </div>
         </div>
       </div>
