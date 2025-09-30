@@ -56,7 +56,7 @@ function App() {
         <Route path="/api-keys/view-revoke/:id" element={<ViewRevoke />} />
         <Route path="/noti" element={<Noti/>} />
         <Route path="/product-details/:id" element={<ProductDetail/>} />
-        <Route path="/license" element={<LicenseDetail/>} />
+        <Route path="/license/:id" element={<LicenseDetail />} />
         <Route path="/api-detail" element={<ApiDetail/>} />
         <Route path="/create-api" element={<CreateAPI/>} />
         <Route path="/email-template/create-email" element={<CreateEmail/>} />

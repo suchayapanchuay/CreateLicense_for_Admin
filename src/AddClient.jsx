@@ -225,14 +225,13 @@ export default function AddClient() {
     };
 
     try {
-      // NOTE: ใช้ API_BASE ที่รวม /api ไว้แล้ว
-      await postJSON(`${API_BASE}/clients`, payload);
-
+      const created = await postJSON(`${API_BASE}/clients`, payload);
       setOkMsg("สร้าง Client สำเร็จ");
       window.scrollTo({ top: 0, behavior: "smooth" });
 
-      // ถ้าอยากรีไดเรกต์อัตโนมัติหลังสำเร็จ:
-      // setTimeout(() => navigate("/client", { state: { flash: "Client created" } }), 1200);
+      if (created?.id) {
+        navigate(`/client/${created.id}`);      // 👉 ไปหน้า Client Detail
+      }
     } catch (e) {
       const msg = String(e?.message || e);
       if (/409/.test(msg) || /duplicate/i.test(msg)) setError("อีเมลหรือชื่อผู้ใช้ซ้ำในระบบ");
@@ -242,6 +241,55 @@ export default function AddClient() {
       setSubmitting(false);
     }
   }
+
+  //async function onCreate() {
+  //  if (submitting) return;
+  //  if (!validate()) return;
+  //  setSubmitting(true);
+  //  setOkMsg("");
+  //  setError("");
+  //
+  //  const payload = {
+  //    requestType: reqType,
+  //    search,
+  //    source: location.state?.source || null,
+  //    sourceId: location.state?.sourceId ? String(location.state.sourceId) : null,
+  //    profile: {
+  //      firstName: form.firstName,
+  //      lastName: form.lastName,
+  //      email: form.email,
+  //      phone: form.phone,
+  //      company: form.company,
+  //      industry: form.industry,
+  //      country: form.country,
+  //      message: form.message,
+  //      estimateUser: form.estimateUser ? Number(form.estimateUser) : null,
+  //    },
+  //    credentials: { username: form.username, password: form.password },
+  //    trial: { days: parseDays(form.trialDays) },
+  //  };
+  //
+  //  try {
+  //    // ต้องให้ API คืน object ที่มี id มาด้วย (เช่น { id: 123, ... })
+  //    const created = await postJSON(`${API_BASE}/clients`, payload);
+  //
+  //    setOkMsg("สร้าง Client สำเร็จ");
+  //    window.scrollTo({ top: 0, behavior: "smooth" });
+  //
+  //    // 👉 พาไปหน้า Client Detail ทันที
+  //    if (created?.id) {
+  //      navigate(`/client/${created.id}`);
+  //    }
+  //    // else: ถ้า API ยังไม่คืน id มาก็อยู่หน้าเดิมได้
+  //  } catch (e) {
+  //    const msg = String(e?.message || e);
+  //    if (/409/.test(msg) || /duplicate/i.test(msg)) setError("อีเมลหรือชื่อผู้ใช้ซ้ำในระบบ");
+  //    else if (/NetworkError|Failed to fetch|CORS/.test(msg)) setError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (อาจเป็น CORS/เครือข่าย)");
+  //    else setError(msg);
+  //  } finally {
+  //    setSubmitting(false);
+  //  }
+  //}
 
   return (
     <div style={styles.root}>
