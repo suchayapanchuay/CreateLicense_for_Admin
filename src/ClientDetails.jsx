@@ -152,8 +152,20 @@ export default function ClientDetails() {
         setClient(c);
 
         if (!alive) return;
-        const lic = await getJSON(`${API_BASE}/clients/${clientId}/licenses`);
-        setLicenses(Array.isArray(lic) ? lic : []);
+        const licRes = await getJSON(`${API_BASE}/clients/${clientId}/licenses`);
+          console.log("[licenses raw]", licRes);
+
+          const licArr =
+            (Array.isArray(licRes) && licRes) ||
+            licRes?.licenses ||
+            licRes?.items ||
+            licRes?.results ||
+            (Array.isArray(licRes?.data) ? licRes.data : null) ||
+            [];
+
+          setLicenses(Array.isArray(licArr) ? licArr : []);
+          console.log("[licenses normalized]", licArr.length, licArr);
+
       } catch (e) {
         if (!alive) return;
         setErr(String(e?.message || e));
@@ -261,14 +273,18 @@ export default function ClientDetails() {
             {loading ? (
               <div style={{ padding: "14px 16px", color: THEME.textMut, fontWeight: 700 }}>กำลังโหลดไลเซนส์...</div>
             ) : licenses?.length ? (
-              licenses.map((lic) => {
-                const key = lic.licenseKey || lic.key || "";
-                const issued = lic.issuedAt || lic.startDate || lic.start_at;
-                const expires = lic.expiresAt || lic.endDate || lic.end_at;
+              licenses.map((lic, idx) => {
+                const id      = lic.id ?? lic.licenseId ?? lic.license_id ?? `${idx}`;
+                const key     = lic.licenseKey || lic.key || lic.license_key || "";
+                const issued  = lic.issuedAt   || lic.startDate || lic.issued_at || lic.start_at;
+                const expires = lic.expiresAt  || lic.endDate   || lic.expires_at || lic.end_at;
+                const product = pick(lic, ["productSku", "product_sku", "sku", "product"]) || "-";
+                const ltype   = pick(lic, ["type", "licenseType", "license_type", "term"]) || "-";
+
                 return (
-                  <div key={lic.id || key} style={styles.row}>
-                    <div>{lic.productSku || lic.product || "-"}</div>
-                    <div>{lic.type || "-"}</div>
+                  <div key={id || key || idx} style={styles.row}>
+                    <div>{product}</div>
+                    <div>{ltype}</div>
                     <div style={{ wordBreak: "break-all" }}>{key || "-"}</div>
                     <div>{fmtDate(issued)}</div>
                     <div>{fmtDate(expires)}</div>
@@ -276,7 +292,7 @@ export default function ClientDetails() {
                       <button
                         style={styles.eyeBtn}
                         title="View License"
-                        onClick={() => navigate(`/license/${lic.id}`)} 
+                        onClick={() => navigate(`/license/${id}`)}
                       >
                         <FiEye />
                       </button>
@@ -286,12 +302,8 @@ export default function ClientDetails() {
                         onClick={async () => {
                           try {
                             await navigator.clipboard.writeText(String(key));
-                            setFlash("คัดลอก License Key แล้ว");
-                            setTimeout(() => setFlash(""), 1500);
-                          } catch {
-                            setErr("คัดลอกไม่สำเร็จ");
-                            setTimeout(() => setErr(""), 1500);
-                          }
+                            setFlash("คัดลอก License Key แล้ว"); setTimeout(() => setFlash(""), 1500);
+                          } catch { setErr("คัดลอกไม่สำเร็จ"); setTimeout(() => setErr(""), 1500); }
                         }}
                       >
                         Copy
@@ -300,6 +312,7 @@ export default function ClientDetails() {
                   </div>
                 );
               })
+
             ) : (
               <div style={{ padding: "14px 16px", color: THEME.textMut, fontWeight: 700 }}>ยังไม่มีไลเซนส์ในลูกค้ารายนี้</div>
             )}

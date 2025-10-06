@@ -1,242 +1,173 @@
-// src/pages/CreateNewTemplate.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Sidebar from "./SideBar";
-import { useNavigate } from "react-router-dom";
 import Topbar from "./Topbar";
+import { useNavigate } from "react-router-dom";
+import { API_BASE } from "./config";
 
-const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  textFaint: "rgba(255,255,255,0.55)",
-  accent: "#3B82F6",
-  btn: "#3B82F6",
-  btnText: "#fff",
-};
+const THEME={pageBg:"#0B1A2D",stageBg:"#0E1D33",card:"#13253D",border:"rgba(255,255,255,0.12)",text:"rgba(255,255,255,0.92)",textMut:"rgba(255,255,255,0.70)",accent:"#3B82F6"};
+const styles={root:{display:"flex",minHeight:"100vh",background:THEME.pageBg,fontFamily:"Inter, system-ui"},content:{flex:1,display:"flex",justifyContent:"center",padding:24},stage:{width:1152,background:THEME.stageBg,borderRadius:16,border:`1px solid ${THEME.border}`,padding:24,position:"relative"},topbarRow:{display:"flex",alignItems:"center",gap:12,marginBottom:10},title:{fontSize:40,fontWeight:900,color:THEME.text,margin:"20px 0 6px"},breadcrumb:{color:THEME.textMut,fontWeight:600,marginBottom:18},formContainer:{display:"flex",gap:24,marginTop:20},formSection:{flex:1,display:"flex",flexDirection:"column",gap:16},formCard:{background:THEME.card,border:`1px solid ${THEME.border}`,borderRadius:12,padding:18},label:{color:THEME.textMut,fontSize:13,fontWeight:700,marginBottom:6},input:{width:"90%",background:"rgba(255,255,255,0.06)",color:THEME.text,border:`1px solid ${THEME.border}`,borderRadius:8,padding:"10px 12px",outline:"none"},textarea:{width:"95%",background:"rgba(255,255,255,0.06)",color:THEME.text,border:`1px solid ${THEME.border}`,borderRadius:8,padding:"10px 12px",outline:"none",minHeight:150,resize:"vertical"},radioLabel:{display:"flex",alignItems:"center",gap:8,color:THEME.text,fontWeight:600,cursor:"pointer"},radioInput:{appearance:"none",width:16,height:16,borderRadius:"50%",border:`2px solid ${THEME.border}`,position:"relative",outline:"none",cursor:"pointer",flexShrink:0},variableTags:{display:"flex",gap:8,flexWrap:"wrap",marginTop:10},tag:{background:"rgba(255,255,255,0.06)",border:`1px solid ${THEME.border}`,color:THEME.text,padding:"4px 8px",borderRadius:4,fontSize:12,cursor:"pointer"},previewSection:{flex:1,background:THEME.card,border:`1px solid ${THEME.border}`,borderRadius:12,padding:24},previewTitle:{color:THEME.text,fontSize:18,fontWeight:700,marginBottom:12},previewBody:{color:THEME.text,whiteSpace:"pre-wrap"}};
 
-const styles = {
-  root: { display: "flex", minHeight: "100vh", background: THEME.pageBg, fontFamily: "Inter, system-ui" },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: 24 },
-  stage: { width: 1152, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+const EMPTY_FORM = { slug:"", name:"", subject:"", body:"", status:"Active", is_html:true };
 
-  /* Topbar */
-  topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 },
+export default function CreateNewTemplate(){
+  const navigate=useNavigate();
+  const [form,setForm]=useState(EMPTY_FORM);
+  const [varsList,setVarsList]=useState({client:[],license:[],meta:[],examples:[]});
+  const [preview,setPreview]=useState({subject:"",body:""});
+  const [saving,setSaving]=useState(false);
+  const [err,setErr]=useState("");
+  const bodyRef = useRef(null);
 
-  title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "20px 0 6px" },
-  breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 18 },
+  const previewVars = useMemo(() => ({
+    client:{first_name:"Suchaya",last_name:"Panchuay",email:"user@example.com",username:"suchaya",plain_password:"Passw0rd!"},
+    license:{license_key:"AAAAA-BBBBB-CCCCC-DDDDD",term:"trial",product_sku:"SMART_AUDIT_TRIAL",expires_at:"2025-12-31T15:00:00"},
+    meta:{app_name:"SmartAudit",portal_url:"http://localhost:3000"}
+  }), []);
 
-  formContainer: { display: "flex", gap: "24px", marginTop: "20px" },
-  formSection: { flex: 1, display: "flex", flexDirection: "column", gap: "16px" },
-  formCard: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 18 },
+  useEffect(()=>{
+    const ctrl = new AbortController();
+    (async()=>{
+      try{
+        const r=await fetch(`${API_BASE}/email-templates/variables/list`, { signal: ctrl.signal });
+        if (r.ok) setVarsList(await r.json());
+      }catch(e){ /* ignore */ }
+    })();
+    return ()=>ctrl.abort();
+  },[]);
 
-  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
-  input: {
-    width: "90%", background: "rgba(255,255,255,0.06)", color: THEME.text,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
-  },
-  textarea: {
-    width: "95%", background: "rgba(255,255,255,0.06)", color: THEME.text,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none",
-    minHeight: "150px", resize: "vertical"
-  },
+  // Debounce preview
+  useEffect(()=>{
+    const ctrl = new AbortController();
+    const t = setTimeout(async ()=>{
+      try{
+        const r=await fetch(`${API_BASE}/email-templates/render/preview`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          signal: ctrl.signal,
+          body:JSON.stringify({subject:form.subject,body:form.body,variables:previewVars})
+        });
+        if(r.ok){ setPreview(await r.json()); }
+      }catch(e){/* ignore */}
+    }, 250);
+    return ()=>{ clearTimeout(t); ctrl.abort(); };
+  },[form.subject,form.body,previewVars]);
 
-  statusRadios: { display: "flex", gap: "24px", alignItems: "center" },
-  radioLabel: { display: "flex", alignItems: "center", gap: "8px", color: THEME.text, fontWeight: 600, cursor: "pointer" },
-  radioInput: {
-    appearance: "none", width: "16px", height: "16px", borderRadius: "50%",
-    border: `2px solid ${THEME.border}`, position: "relative", outline: "none",
-    cursor: "pointer", flexShrink: 0,
-  },
-
-  variableTags: { display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" },
-  tag: {
-    background: "rgba(255,255,255,0.06)", border: `1px solid ${THEME.border}`,
-    color: THEME.textMut, padding: "4px 8px", borderRadius: "4px", fontSize: "12px",
-    cursor: "pointer",
-  },
-
-  previewSection: { flex: 1, background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 24 },
-  previewTitle: { color: THEME.text, fontSize: 18, fontWeight: 700, marginBottom: 12 },
-  previewBody: { color: THEME.textMut, fontSize: 14, whiteSpace: "pre-wrap" },
-
-  editorToolbar: {
-    display: "flex", gap: "10px", padding: "8px", border: `1px solid ${THEME.border}`,
-    borderRadius: "8px 8px 0 0", background: "rgba(255,255,255,0.06)", marginTop: 10
-  },
-  editorBtn: { background: "none", border: "none", cursor: "pointer", color: THEME.textMut, fontSize: "18px", padding: "4px" },
-
-  actions: { display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 },
-  btnCancel: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: "#8B9EB8", color: "#fff" },
-  btnSave: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
-};
-
-const MOCK_TEMPLATE_DATA = {
-  name: "License Expiry",
-  subject: "Your License Will Expire Soon",
-  status: "Active",
-  body: "Hello {{user_name}},\n\nYour license ({{license_key}}) will expire on {{expiry_date}}.\n\nPlease renew it soon.",
-};
-
-const MOCK_VARS = {
-  user_name: "John Doe",
-  license_key: "ABCD-EFGH-IJKL",
-  expiry_date: "31 Dec 2025",
-};
-
-export default function CreateNewTemplate() {
-  const navigate = useNavigate();
-  const onSearchNoop = () => {};
-
-  const [form, setForm] = useState(MOCK_TEMPLATE_DATA);
-  const [previewContent, setPreviewContent] = useState("");
-  const editorRef = useRef(null);
-
-  // live preview
-  useEffect(() => {
-    let newContent = form.body;
-    for (const [key, value] of Object.entries(MOCK_VARS)) {
-      newContent = newContent.replace(new RegExp(`{{${key}}}`, "g"), value);
-    }
-    setPreviewContent(newContent);
-  }, [form.body]);
-
-  const handleFormChange = (e) => {
-    const { name, value, type } = e.target;
-    // รองรับ radio (status)
-    const v = type === "radio" ? e.target.value : value;
-    setForm((f) => ({ ...f, [name]: v }));
+  const handleChange=e=>{
+    const {name,value,type,checked}=e.target;
+    setForm(f=>({...f,[name]: type==="checkbox" ? checked : value }));
   };
 
-  const handleTagClick = (tag) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const inserted = `{{${tag}}}`;
-    const newBody = form.body.substring(0, start) + inserted + form.body.substring(end);
-    setForm((f) => ({ ...f, body: newBody }));
-    // วาง caret หลัง tag
-    requestAnimationFrame(() => {
-      editor.focus();
-      editor.selectionStart = editor.selectionEnd = start + inserted.length;
+  // Insert tag at caret
+  const handleInsert=(tag)=>{
+    const inserted=`{{${tag}}}`;
+    setForm(f=>{
+      const ta = bodyRef.current;
+      if (!ta) return {...f, body: `${f.body}${f.body && !f.body.endsWith("\n") ? "\n" : ""}${inserted}`};
+      const start = ta.selectionStart ?? f.body.length;
+      const end   = ta.selectionEnd ?? f.body.length;
+      const before = f.body.slice(0, start);
+      const after  = f.body.slice(end);
+      const newVal = before + inserted + after;
+      // set caret after insert (async setState)
+      requestAnimationFrame(()=>{
+        const pos = start + inserted.length;
+        ta.focus();
+        ta.setSelectionRange(pos, pos);
+      });
+      return {...f, body: newVal};
     });
   };
 
-  const handleSave = () => {
-    alert("Template saved!");
-    console.log("Saving template:", form);
+  const handleSave=async()=>{
+    setSaving(true); setErr("");
+    try{
+      if(!form.slug || !form.name || !form.subject) throw new Error("Please fill slug, name, and subject.");
+      const r=await fetch(`${API_BASE}/email-templates`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(form)
+      });
+      if(!r.ok) throw new Error(await r.text());
+      alert("Template created.");
+      navigate("/email-template");
+    }catch(e){ setErr(String(e?.message||e)); }
+    finally{ setSaving(false); }
   };
 
-  //const handleCancel = () => navigate("/setting/email-template");
-
-  // demo editor commands (ใช้กับ contenteditable จะโอเคกว่า แต่คงตามโค้ดเดิม)
-  const handleRichText = (command, value = null) => {
-    document.execCommand(command, false, value);
+  const PreviewBody = () => {
+    if (form.is_html) {
+      // ควร sanitize HTML ฝั่งเซิร์ฟเวอร์ก่อนส่งกลับมา preview.body
+      return <div style={styles.previewBody} dangerouslySetInnerHTML={{__html: preview.body || "(preview body)"}} />;
+    }
+    return <div style={styles.previewBody}>{preview.body || "(preview body)"}</div>;
   };
 
-  return (
+  return(
     <div style={styles.root}>
-      <Sidebar />
+      <Sidebar/>
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* Topbar (統一ใช้คอมโพเนนต์เดียวกับหน้าอื่น) */}
-          <div style={styles.topbarRow}>
-            <div style={{ flex: 1 }}>
-              <Topbar
-                placeholder="Search templates"
-                onSearchChange={onSearchNoop}
-                defaultFilter="all"
-                onViewAllPath="/Noti"
-              />
-            </div>
-          </div>
-
-          {/* Heading & Breadcrumb */}
+          <div style={styles.topbarRow}><div style={{flex:1}}><Topbar placeholder="Search templates" onSearchChange={()=>{}} defaultFilter="all" onViewAllPath="/Noti"/></div></div>
           <div style={styles.title}>Setting / Logs</div>
           <div style={styles.breadcrumb}>
-            <span style={{ cursor: "pointer" }} onClick={() => navigate("/setting")}>Setting / Logs</span>
-            &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }} onClick={() => navigate("/email-template")}>Email Template</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Create New Template</span>
+            <span >Setting / Logs</span>
+            &nbsp;&gt;&nbsp;<span style={{cursor:"pointer"}} onClick={()=>navigate("/email-template")}>Email Template</span>
+            &nbsp;&gt;&nbsp;<span style={{color:"#9CC3FF"}}>Create New Template</span>
           </div>
 
           <div style={styles.formContainer}>
             {/* Form */}
             <div style={styles.formSection}>
               <div style={styles.formCard}>
-                <div style={styles.label}>Create New Template</div>
+                {err && <div style={{color:"#FCA5A5",fontWeight:800,marginBottom:10}}>{err}</div>}
+                <div style={styles.label}>Slug</div>
+                <input name="slug" value={form.slug} onChange={handleChange} placeholder="welcome" style={styles.input}/>
+                <div style={styles.label}>Name</div>
+                <input name="name" value={form.name} onChange={handleChange} placeholder="Welcome / Credentials + License" style={styles.input}/>
+                <div style={styles.label}>Subject</div>
+                <input name="subject" value={form.subject} onChange={handleChange} placeholder="[{{meta.app_name}}] Your account & license" style={styles.input}/>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div>
-                    <div style={styles.label}>Name</div>
-                    <input type="text" name="name" value={form.name} onChange={handleFormChange} style={styles.input} />
-                  </div>
-
-                  <div>
-                    <div style={styles.label}>Subject</div>
-                    <input type="text" name="subject" value={form.subject} onChange={handleFormChange} style={styles.input} />
-                  </div>
-
-                  <div>
-                    <div style={styles.label}>Status</div>
-                    <div style={styles.statusRadios}>
-                      <label style={styles.radioLabel}>
-                        <input type="radio" name="status" value="Active" checked={form.status === "Active"} onChange={handleFormChange} style={styles.radioInput} />
-                        Active
-                      </label>
-                      <label style={styles.radioLabel}>
-                        <input type="radio" name="status" value="Draft" checked={form.status === "Draft"} onChange={handleFormChange} style={styles.radioInput} />
-                        Draft
-                      </label>
-                      <label style={styles.radioLabel}>
-                        <input type="radio" name="status" value="Disabled" checked={form.status === "Disabled"} onChange={handleFormChange} style={styles.radioInput} />
-                        Disabled
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* variable tags */}
-                <div style={styles.variableTags}>
-                  {Object.keys(MOCK_VARS).map((tag) => (
-                    <div key={tag} style={styles.tag} onClick={() => handleTagClick(tag)}>
-                      {`{{${tag}}}`}
-                    </div>
+                <div style={{display:"flex",gap:18,alignItems:"center",marginTop:10}}>
+                  <div style={styles.label}>Status</div>
+                  {["Active","Draft","Disabled"].map(s=>(
+                    <label key={s} style={styles.radioLabel}>
+                      <input type="radio" name="status" value={s} checked={form.status===s} onChange={handleChange} style={styles.radioInput}/>
+                      {s}
+                    </label>
                   ))}
                 </div>
 
-                {/* editor toolbar */}
-                <div style={styles.editorToolbar}>
-                  <button style={styles.editorBtn} onClick={() => handleRichText("bold")}><b>B</b></button>
-                  <button style={styles.editorBtn} onClick={() => handleRichText("italic")}><i>I</i></button>
-                  <button style={styles.editorBtn} onClick={() => handleRichText("underline")}><u>U</u></button>
-                  <button style={styles.editorBtn} onClick={() => handleRichText("justifyLeft")}>&#8801;</button>
-                  <button style={styles.editorBtn} onClick={() => handleRichText("justifyCenter")}>&#8802;</button>
-                  <button style={styles.editorBtn} onClick={() => handleRichText("justifyRight")}>&#8803;</button>
+                <div style={{marginTop:10, display:"flex", alignItems:"center", gap:8, color:THEME.text}}>
+                  <input id="is_html" type="checkbox" name="is_html" checked={form.is_html} onChange={handleChange}/>
+                  <label htmlFor="is_html">Send as HTML (recommend)</label>
                 </div>
 
-                <textarea
-                  ref={editorRef}
-                  name="body"
-                  value={form.body}
-                  onChange={handleFormChange}
-                  style={{ ...styles.textarea, borderRadius: "0 0 8px 8px" }}
-                />
-              </div>
+                <div style={{marginTop:12, ...styles.label}}>Body</div>
+                <textarea ref={bodyRef} name="body" value={form.body} onChange={handleChange} style={styles.textarea} placeholder="HTML or Text. Use {{client.first_name}} etc."/>
 
-              {/* Actions */}
-              <div style={styles.actions}>
-                <button style={styles.btnCancel} onClick={() => navigate("/email-template")}>Cancel</button>
-                <button style={styles.btnSave} onClick={handleSave}>Save Template</button>
+                {/* variable tags */}
+                <div style={{marginTop:8}}>
+                  <div style={styles.label}>Variables</div>
+                  <div style={styles.variableTags}>
+                    {["client","license","meta"].flatMap(ns => (varsList[ns]||[]).map(key => (
+                      <div key={`${ns}.${key}`} style={styles.tag} onClick={()=>handleInsert(`${ns}.${key}`)}>
+                        {`{{${ns}.${key}}}`}
+                      </div>
+                    )))}
+                  </div>
+                </div>
+
+                <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:18}}>
+                  <button style={{borderRadius:8,padding:"10px 14px",fontWeight:800,cursor:"pointer",border:"none",background:"#8B9EB8",color:"#fff"}} onClick={()=>navigate("/email-template")}>Cancel</button>
+                  <button style={{borderRadius:8,padding:"10px 14px",fontWeight:800,cursor:"pointer",border:"none",background:THEME.accent,color:"#fff"}} disabled={saving} onClick={handleSave}>{saving?"Saving...":"Save Template"}</button>
+                </div>
               </div>
             </div>
 
             {/* Live Preview */}
             <div style={styles.previewSection}>
-              <div style={styles.previewTitle}>{form.subject}</div>
-              <div style={styles.previewBody}>{previewContent}</div>
+              <div style={styles.previewTitle}>{preview.subject || "(preview subject)"}</div>
+              <PreviewBody/>
             </div>
           </div>
         </div>

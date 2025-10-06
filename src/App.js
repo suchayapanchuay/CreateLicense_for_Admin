@@ -60,7 +60,7 @@ function App() {
         <Route path="/api-detail" element={<ApiDetail/>} />
         <Route path="/create-api" element={<CreateAPI/>} />
         <Route path="/email-template/create-email" element={<CreateEmail/>} />
-        <Route path="/email-template/edit-email" element={<EditEmail/>} />
+        <Route path="/email-template/edit-email/:templateId" element={<EditEmail />} />
       </Routes>
     </Router>
   );

@@ -1,13 +1,13 @@
 import React from "react";
 import Sidebar from "./SideBar";
+import Topbar from "./Topbar";
 import { IoPencilOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-import Topbar from "./Topbar";
 import { API_BASE } from "./config";
 
 const THEME = { pageBg:"#0B1A2D", stageBg:"#0E1D33", card:"#13253D", border:"rgba(255,255,255,0.12)", text:"rgba(255,255,255,0.92)", textMut:"rgba(255,255,255,0.70)", accent:"#3B82F6", btn:"#3B82F6", btnText:"#fff" };
 
-const styles = { /* (เหมือนของเดิมทุกบรรทัด) */ 
+const styles = {
   root:{display:"flex",minHeight:"100vh",background:THEME.pageBg,fontFamily:"Inter, system-ui"},
   content:{flex:1,display:"flex",justifyContent:"center",padding:24},
   stage:{width:1152,background:THEME.stageBg,borderRadius:16,border:`1px solid ${THEME.border}`,padding:24,position:"relative"},
@@ -29,55 +29,113 @@ const styles = { /* (เหมือนของเดิมทุกบรร�
   actionBtn:{width:34,height:34,display:"grid",placeItems:"center",borderRadius:999,border:`1px solid ${THEME.border}`,background:"transparent",color:THEME.textMut,cursor:"pointer"},
   pagination:{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:10,marginTop:20,color:THEME.textMut},
   paginationCurrent:{fontWeight:700,color:THEME.text,background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 12px"},
+  loading:{padding:16,color:"#9CA3AF"},
 };
 
-export default function EmailTemplate() {
+export default function EmailTemplateList() {
   const navigate = useNavigate();
   const [items, setItems] = React.useState([]);
   const [err, setErr] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
+
+  // simple mock pagination state (client-side)
+  const [page, setPage] = React.useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const view = React.useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+  }, [items, page]);
 
   React.useEffect(() => {
+    const ctrl = new AbortController();
     (async () => {
       try {
-        const r = await fetch(`${API_BASE}/email-templates`);
+        setLoading(true);
+        setErr("");
+        const r = await fetch(`${API_BASE}/email-templates`, { signal: ctrl.signal });
         if (!r.ok) throw new Error(await r.text());
-        setItems(await r.json());
-      } catch (e) { setErr(String(e?.message||e)); }
+        const data = await r.json();
+        setItems(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (e.name !== "AbortError") setErr(String(e?.message || e));
+      } finally {
+        setLoading(false);
+      }
     })();
+    return () => ctrl.abort();
   }, []);
 
-  const getStatusStyle = (s) => s==="Active"?styles.statusActive: s==="Draft"?styles.statusDraft: styles.statusDisabled;
+  const getStatusStyle = (s) => s==="Active" ? styles.statusActive : s==="Draft" ? styles.statusDraft : styles.statusDisabled;
+
+  const fmt = (iso) => {
+    if (!iso) return "-";
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  };
 
   return (
     <div style={styles.root}>
       <Sidebar />
       <div style={styles.content}>
         <div style={styles.stage}>
-          <div style={styles.topbarRow}><div style={{flex:1}}><Topbar placeholder="Search templates" onSearchChange={()=>{}} defaultFilter="all" onViewAllPath="/Noti" /></div></div>
+          <div style={styles.topbarRow}>
+            <div style={{flex:1}}>
+              <Topbar placeholder="Search templates" onSearchChange={()=>{}} defaultFilter="all" onViewAllPath="/Noti" />
+            </div>
+          </div>
+
           <div style={styles.title}>Setting / Logs</div>
-          <div style={styles.breadcrumb}><span style={{cursor:"pointer"}} onClick={()=>navigate("/setting")}>Setting / Logs</span>&nbsp;&gt;&nbsp;<span style={{color:"#9CC3FF"}}>Email Template</span></div>
+          <div style={styles.breadcrumb}>
+            <span >Setting / Logs</span>
+            &nbsp;&gt;&nbsp;<span style={{color:"#9CC3FF"}}>Email Template</span>
+          </div>
 
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:20}}>
-            <button style={{...styles.btn,...styles.btnPrimary}} onClick={()=>navigate("/email-template/create-email")}>+ Create New Template</button>
+            <button style={{...styles.btn,...styles.btnPrimary}} onClick={()=>navigate("/email-template/create-email")}>
+              + Create New Template
+            </button>
           </div>
 
           {err && <div style={{color:"#FCA5A5",marginBottom:12,fontWeight:800}}>{err}</div>}
+          {loading && <div style={styles.loading}>Loading templates…</div>}
 
-          <div style={styles.tableWrap}>
-            <div style={styles.header}><div>Template Name</div><div>Subject Line</div><div>Last Updated</div><div>Status</div><div>Actions</div></div>
-            {items.map(t=>(
-              <div key={t.id} style={styles.row}>
-                <div style={{...styles.cell,...styles.templateName}}>{t.name} <span style={{opacity:.7}}>({t.slug})</span></div>
-                <div style={{...styles.cell,...styles.subjectLine}}>{t.subject}</div>
-                <div style={styles.cell}>{t.updated_at?.slice(0,16).replace("T"," ")}</div>
-                <div><span style={{...styles.statusBadge,...getStatusStyle(t.status)}}>{t.status}</span></div>
-                <div><button style={styles.actionBtn} onClick={()=>navigate(`/email-template/edit-email/${t.id}`)}><IoPencilOutline size={18}/></button></div>
+          {!loading && (
+            <div style={styles.tableWrap}>
+              <div style={styles.header}>
+                <div>Template Name</div><div>Subject Line</div><div>Last Updated</div><div>Status</div><div>Actions</div>
               </div>
-            ))}
-            {!items.length && <div style={{padding:16,color:"#9CA3AF"}}>No templates</div>}
-          </div>
+              {view.map(t=>(
+                <div key={t.id} style={styles.row}>
+                  <div style={{...styles.cell,...styles.templateName}}>
+                    {t.name} <span style={{opacity:.7}}>({t.slug})</span>
+                  </div>
+                  <div style={{...styles.cell,...styles.subjectLine}}>{t.subject}</div>
+                  <div style={styles.cell}>{fmt(t.updated_at)}</div>
+                  <div><span style={{...styles.statusBadge,...getStatusStyle(t.status)}}>{t.status}</span></div>
+                  <div>
+                    <button
+                      title="Edit"
+                      style={styles.actionBtn}
+                      onClick={() => navigate(`/email-template/edit-email/${t.id}`)}
+                    >
+                      <IoPencilOutline size={18}/>
+                    </button>
 
-          <div style={styles.pagination}><span>&lt;</span><span style={styles.paginationCurrent}>1</span><span>&gt;</span></div>
+
+                  </div>
+                </div>
+              ))}
+              {!view.length && <div style={{padding:16,color:"#9CA3AF"}}>No templates</div>}
+            </div>
+          )}
+
+          {!loading && (
+            <div style={styles.pagination}>
+              <button disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>&lt;</button>
+              <span style={styles.paginationCurrent}>{page}</span>
+              <button disabled={page>=totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}>&gt;</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
