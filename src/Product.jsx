@@ -1,54 +1,98 @@
-// src/pages/product.jsx
-import React, { useMemo, useState } from "react";
+// src/pages/Products.jsx
+import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "./SideBar";
 import { FiChevronDown, FiEye } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import Topbar from "./Topbar";
+import { API_BASE } from "./config";
 
-/* THEME */
+/* THEME (Light to match Dashboard/Clients/etc.) */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  accent: "#3B82F6",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#E8F0FE",
+  border: "rgba(0,0,0,0.08)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  accent: "#2563EB",
 };
 
-/* STYLES (ตัดส่วน topbar/notifications เดิมออก) */
 const styles = {
-  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
-  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
-
+  root: {
+    display: "flex",
+    minHeight: "100vh",
+    background: THEME.pageBg,
+    fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+  },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "20px 16px", position: "relative" },
+  stage: {
+    width: 1152,
+    minHeight: 800,
+    background: THEME.stageBg,
+    borderRadius: 16,
+    border: `1px solid ${THEME.border}`,
+    padding: 24,
+    position: "relative",
+    boxShadow: "0 10px 28px rgba(0,0,0,.08)",
+  },
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 20px" },
 
-  /* toolbar */
   toolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+
   selectWrap: { position: "relative", display: "inline-block" },
   select: {
     appearance: "none",
-    background: THEME.card,
+    background: THEME.stageBg,
     color: THEME.text,
     border: `1px solid ${THEME.border}`,
     borderRadius: 8,
-    padding: "8px 34px 8px 12px",
+    padding: "8px 40px 8px 12px",
     fontWeight: 700,
     cursor: "pointer",
   },
-  caret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: THEME.textMut, pointerEvents: "none" },
-  addBtn: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: "#27A9FF", color: "#062033" },
+  caret: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: THEME.textMut,
+    pointerEvents: "none",
+    fontSize: 18,
+  },
 
-  /* table */
-  tableWrap: { borderRadius: 12, overflow: "hidden", background: THEME.card, border: `1px solid ${THEME.border}` },
+  btn: {
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    border: `1px solid ${THEME.border}`,
+    background: "#FFFFFF",
+    color: THEME.text,
+  },
+  btnPrimary: {
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontWeight: 700,
+    cursor: "pointer",
+    border: "none",
+    background: THEME.accent,
+    color: "#fff",
+  },
+
+  tableWrap: {
+    borderRadius: 12,
+    overflow: "hidden",
+    background: "#FFFFFF",
+    border: `1px solid ${THEME.border}`,
+  },
   header: {
-    background: "rgba(255,255,255,0.08)",
+    background: "#F9FBFF",
     display: "grid",
     gridTemplateColumns: "2.4fr 2fr 1.2fr 1fr",
     padding: "12px 18px",
     color: THEME.text,
     fontWeight: 800,
+    borderBottom: `1px solid ${THEME.border}`,
   },
   row: {
     display: "grid",
@@ -57,84 +101,120 @@ const styles = {
     color: THEME.text,
     borderTop: `1px solid ${THEME.border}`,
     alignItems: "center",
+    background: "#FFFFFF",
   },
+
   statusBadge: (type) => ({
     display: "inline-block",
     padding: "6px 12px",
     borderRadius: 999,
     fontWeight: 800,
     fontSize: 12,
-    background: type === "active" ? "#A3E635" : "#94A3B8",
-    color: type === "active" ? "#0C2712" : "#1E293B",
+    background: type === "active" ? "rgba(34,197,94,0.16)" : "rgba(148,163,184,0.16)",
+    color: THEME.text,
+    textTransform: "capitalize",
+    border: `1px solid ${THEME.border}`,
   }),
-  eyeBtn: { width: 34, height: 34, display: "grid", placeItems: "center", borderRadius: "999px", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text, cursor: "pointer" },
 
-  /* pagination */
-  pagination: { display: "flex", justifyContent: "center", alignItems: "center", gap: 18, marginTop: 18 },
-  pageBtn: { width: 32, height: 32, borderRadius: 8, border: `1px solid ${THEME.border}`, display: "grid", placeItems: "center", color: THEME.textMut, cursor: "pointer", background: "transparent", fontWeight: 600 },
-  pageCurrent: { minWidth: 32, height: 32, borderRadius: 8, background: THEME.card, display: "grid", placeItems: "center", color: THEME.text, fontWeight: 800, border: `1px solid ${THEME.border}` },
+  eyeBtn: {
+    width: 34,
+    height: 34,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: "10px",
+    border: `1px solid ${THEME.border}`,
+    background: "#FFFFFF",
+    color: THEME.text,
+    cursor: "pointer",
+  },
 };
-
-/* MOCK PRODUCTS */
-const ALL_PRODUCTS = [
-  { id: 1, name: "Smart Audit", nameLower: "smart audit", category: "Accounting Software", categoryLower: "accounting software", status: "active" },
-  { id: 2, name: "Product B",   nameLower: "product b",   category: "Cloud Services",       categoryLower: "cloud services",       status: "active" },
-  { id: 3, name: "Product D",   nameLower: "product d",   category: "Developer Tools",      categoryLower: "developer tools",      status: "active" },
-  { id: 4, name: "Product C",   nameLower: "product c",   category: "HR & Payroll",         categoryLower: "hr & payroll",         status: "active" },
-];
 
 export default function Products() {
   const navigate = useNavigate();
 
-  /* state: search/filter (search มาจาก Topbar) */
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
-  const q = search.toLowerCase();
-  const products = useMemo(() => {
-    return ALL_PRODUCTS.filter((p) => {
-      const hit = p.nameLower.includes(q) || p.categoryLower.includes(q);
-      const statusOK = statusFilter === "all" ? true : p.status === statusFilter;
-      return hit && statusOK;
-    });
-  }, [q, statusFilter]);
+  const loadProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setErr("");
+
+      const url = new URL(`${API_BASE}/products`);
+      url.searchParams.set("limit", 200);
+      url.searchParams.set("offset", 0);
+      if (search.trim()) url.searchParams.set("q", search.trim());
+      // หมายเหตุ: backend ยังไม่รองรับ ?status=; เรากรองฝั่ง client ด้านล่างแทน
+
+      const res = await fetch(url.toString());
+      const txt = await res.text();
+      let data = null;
+      try {
+        data = txt ? JSON.parse(txt) : null;
+      } catch {}
+
+      if (!res.ok) throw new Error((data && data.detail) || txt || `HTTP ${res.status}`);
+
+      // แปลง isActive -> status (active/inactive) + กรองตาม statusFilter
+      let rows = Array.isArray(data) ? data : [];
+      rows = rows.map((r) => ({
+        ...r,
+        status: r.status || (r.isActive ? "active" : "inactive"),
+      }));
+      if (statusFilter !== "all") {
+        rows = rows.filter((r) => r.status === statusFilter);
+      }
+
+      setProducts(rows);
+    } catch (e) {
+      setErr(e?.message || "Failed to load products");
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      loadProducts();
+    }, 250);
+    return () => clearTimeout(t);
+  }, [loadProducts]);
 
   return (
     <div style={styles.root}>
       <Sidebar />
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* ใช้ Topbar แบบเดียวกับหน้า Clients */}
-          <Topbar
-            placeholder="Search products"
-            onSearchChange={(text) => setSearch(text)}
-            defaultFilter="all"
-            onViewAllPath="/Noti"
-          />
+          <Topbar placeholder="Search products" onSearchChange={setSearch} defaultFilter="all" onViewAllPath="/Noti" />
 
-          {/* Heading */}
           <div style={styles.title}>Products</div>
 
-          {/* toolbar */}
           <div style={styles.toolbar}>
-            <div className="left">
-              <div style={styles.selectWrap}>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={styles.select}
-                >
-                  <option value="all">Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-                <FiChevronDown style={styles.caret} />
-              </div>
+            <div style={styles.selectWrap}>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={styles.select}>
+                <option value="all">All status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <FiChevronDown style={styles.caret} />
             </div>
-            <button style={styles.addBtn} onClick={() => navigate("/product/add")}>+ Add Product</button>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button style={styles.btn} onClick={loadProducts} disabled={loading}>
+                {loading ? "Loading..." : "Reload"}
+              </button>
+              <button style={styles.btnPrimary} onClick={() => navigate("/product/add")}>
+                + Add Product
+              </button>
+            </div>
           </div>
 
-          {/* table */}
+          {err ? <div style={{ color: "#DC2626", marginBottom: 12, fontWeight: 700 }}>{err}</div> : null}
+
           <div style={styles.tableWrap}>
             <div style={styles.header}>
               <div>Product Name</div>
@@ -143,29 +223,33 @@ export default function Products() {
               <div>Actions</div>
             </div>
 
-            {products.map((p) => (
-              <div key={p.id} style={styles.row}>
-                <div>{p.name}</div>
-                <div>{p.category}</div>
-                <div><span style={styles.statusBadge(p.status)}>{p.status === "active" ? "Active" : "Inactive"}</span></div>
-                <div>
-                  <button
-                    style={styles.eyeBtn}
-                    onClick={() => navigate(`/product-details/${p.id}`)}
-                    aria-label={`View ${p.name}`}
-                  >
-                    <FiEye />
-                  </button>
-                </div>
+            {products.length === 0 ? (
+              <div style={{ padding: 16, color: THEME.textMut }}>
+                {loading ? "Loading..." : "No products found"}
               </div>
-            ))}
-          </div>
-
-          {/* pagination */}
-          <div style={styles.pagination}>
-            <div style={styles.pageBtn}>‹</div>
-            <div style={styles.pageCurrent}>1</div>
-            <div style={styles.pageBtn}>›</div>
+            ) : (
+              products.map((p) => {
+                const status = p.status || (p.isActive ? "active" : "inactive");
+                return (
+                  <div key={p.id} style={styles.row}>
+                    <div>{p.name}</div>
+                    <div>{p.category || "-"}</div>
+                    <div>
+                      <span style={styles.statusBadge(status)}>{status}</span>
+                    </div>
+                    <div>
+                      <button
+                        style={styles.eyeBtn}
+                        onClick={() => navigate(`/product-details/${p.id}`)}
+                        title="View details"
+                      >
+                        <FiEye />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

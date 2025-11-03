@@ -1,46 +1,70 @@
 // src/pages/ProductDetail.jsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from "./SideBar";
 import { FiChevronDown } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Topbar from "./Topbar";
+import { API_BASE } from "./config"; // หรือ ../app/config ตามโปรเจกต์ของคุณ
 
-/* THEME */
+/* THEME (Light) */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  textFaint: "rgba(255,255,255,0.55)",
-  accent: "#3B82F6",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#FFFFFF",
+  border: "rgba(0,0,0,0.08)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  textFaint: "#6B7280",
+  accent: "#2563EB",
+  danger: "#DC2626",
 };
 
-/* STYLES */
 const styles = {
-  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
-  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
-
-  /* topbar row (Topbar only) */
+  root: {
+    display: "flex",
+    minHeight: "1024px",
+    background: THEME.pageBg,
+    fontFamily:
+      "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+  },
+  content: {
+    flex: 1,
+    display: "flex",
+    justifyContent: "center",
+    padding: "18px 16px",
+    position: "relative",
+  },
+  stage: {
+    width: 1152,
+    minHeight: 988,
+    background: THEME.stageBg,
+    borderRadius: 16,
+    border: `1px solid ${THEME.border}`,
+    padding: 24,
+    position: "relative",
+    boxShadow: "0 10px 28px rgba(0,0,0,.08)",
+  },
   topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 },
-
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 20px" },
   breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 8 },
 
-  card: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: "hidden" },
-  section: { padding: 16 },
-  sectionHead: { fontWeight: 900, color: THEME.text, marginBottom: 12, opacity: 0.9 },
+  card: {
+    background: THEME.card,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 12,
+    overflow: "hidden",
+    boxShadow: "0 6px 16px rgba(0,0,0,.06)",
+  },
+  section: { padding: 16, background: "#FFFFFF" },
+  sectionHead: { fontWeight: 900, color: THEME.text, marginBottom: 12, opacity: 0.95 },
   divider: { height: 1, background: THEME.border, border: "none" },
-
   grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 },
   field: { display: "grid", gap: 8 },
   label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 8 },
 
   input: {
     width: "80%",
-    background: "rgba(255,255,255,0.07)",
+    background: "#FFFFFF",
     color: THEME.text,
     border: `1px solid ${THEME.border}`,
     borderRadius: 8,
@@ -48,16 +72,13 @@ const styles = {
     outline: "none",
     marginBottom: 8,
   },
-  inputRead: {
-    opacity: 1,
-    pointerEvents: "none",
-    background: "rgba(255,255,255,0.08)",
-  },
+  inputRead: { opacity: 1, pointerEvents: "none", background: "#FFFFFF" },
+
   selectWrap: { position: "relative", width: "80%" },
   select: {
     width: "100%",
     appearance: "none",
-    background: "rgba(255,255,255,0.07)",
+    background: "#FFFFFF",
     color: THEME.text,
     border: `1px solid ${THEME.border}`,
     borderRadius: 8,
@@ -72,65 +93,212 @@ const styles = {
   check: { display: "flex", alignItems: "center", gap: 8, color: THEME.text },
 
   actions: { display: "flex", gap: 10, marginTop: 16 },
-  btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
+  btnPrimary: {
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontWeight: 800,
+    cursor: "pointer",
+    border: "none",
+    background: THEME.accent,
+    color: "#fff",
+    boxShadow: "0 4px 10px rgba(37,99,235,.25)",
+  },
+  btnDanger: {
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontWeight: 800,
+    cursor: "pointer",
+    border: "none",
+    background: THEME.danger,
+    color: "#fff",
+    boxShadow: "0 4px 10px rgba(220,38,38,.18)",
+  },
 };
 
 export default function ProductDetail() {
   const navigate = useNavigate();
-
-  // ให้เหมือน ClientDetails.jsx: ส่ง no-op กัน onSearchChange error
+  const { id } = useParams(); // /product-details/:id
   const onSearchNoop = () => {};
 
-  /* Read-only product data (mock) */
-  const form = {
-    productName: "Smart Audit",
-    productCode: "smartaudit",
-    status: "active",
-    description: "Audit and compliance management tool",
-    version: "1.0.0",
-    category: "Accounting Software",
-    typeTrial: true,
-    typeSubscription: false,
-    typePerpetual: true,
-    licenseDuration: "365",
-    limitSeatsEnabled: true,
-    limitSeats: "100",
-    limitDeviceEnabled: true,
-    limitDevice: "5",
-    rateLimitEnabled: true,
-    rateLimit: "100 req/day",
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [data, setData] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setErr(null);
+
+      const base = (API_BASE || "").replace(/\/$/, "");
+      const endpoints = [
+        `${base}/api/products/${id}`,
+        `http://127.0.0.1:8000/api/products/${id}`,
+      ].filter(Boolean);
+
+      try {
+        let lastErr = null;
+        for (const url of endpoints) {
+          try {
+            const res = await fetch(url);
+            const text = await res.text();
+            const isMaybeHtml = /^\s*</.test(text);
+            if (!res.ok) {
+              if (!isMaybeHtml) {
+                try {
+                  const j = JSON.parse(text);
+                  throw new Error(j?.detail || `HTTP ${res.status}`);
+                } catch {
+                  throw new Error(text || `HTTP ${res.status}`);
+                }
+              } else {
+                throw new Error("Not Found (frontend dev server) — เช็ค API_BASE หรือ proxy");
+              }
+            }
+            const json = isMaybeHtml ? null : (text ? JSON.parse(text) : {});
+            if (alive) setData(json);
+            lastErr = null;
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        if (lastErr) throw lastErr;
+      } catch (e) {
+        if (alive) setErr(e.message || "Failed to load product");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => { alive = false; };
+  }, [id]);
+
+  const onDelete = async () => {
+    if (!id) return;
+    const ok = window.confirm("ต้องการลบสินค้านี้หรือไม่? การลบไม่สามารถย้อนกลับได้");
+    if (!ok) return;
+
+    setDeleting(true);
+    setErr(null);
+    try {
+      const base = (API_BASE || "").replace(/\/$/, "");
+      const endpoints = [
+        `${base}/api/products/${id}`,
+        `http://127.0.0.1:8000/api/products/${id}`,
+      ];
+      let lastErr = null;
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url, { method: "DELETE" });
+          if (res.status === 204) {
+            navigate("/product"); // กลับหน้า list
+            return;
+          }
+          const txt = await res.text();
+          let detail = null;
+          try { detail = txt ? JSON.parse(txt) : null; } catch {}
+          throw new Error((detail && detail.detail) || txt || `HTTP ${res.status}`);
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (lastErr) throw lastErr;
+    } catch (e) {
+      setErr(e?.message || "Failed to delete product");
+    } finally {
+      setDeleting(false);
+    }
   };
+
+  const form = useMemo(() => {
+    if (!data) return null;
+    const meta = data.meta || {};
+    const licensePolicy = meta.licensePolicy || {};
+    const constraints = meta.constraints || {};
+    const supported = new Set(licensePolicy.supportedTypes || []);
+    return {
+      productName: data.name || "",
+      productCode: data.sku || "",
+      status: data.isActive ? "active" : "inactive",
+      description: data.description || "",
+      version: meta.version || "",
+      category: data.category || "Accounting Software",
+      typeTrial: supported.has("trial"),
+      typeSubscription: supported.has("subscription"),
+      typePerpetual: supported.has("perpetual"),
+      licenseDuration: String(licensePolicy.durationDays ?? ""),
+      limitSeatsEnabled: constraints.maxSeats != null,
+      limitSeats: constraints.maxSeats != null ? String(constraints.maxSeats) : "",
+      limitDeviceEnabled: constraints.maxDevice != null,
+      limitDevice: constraints.maxDevice != null ? String(constraints.maxDevice) : "",
+      rateLimitEnabled: constraints.rateLimit != null && constraints.rateLimit !== "",
+      rateLimit: constraints.rateLimit || "",
+    };
+  }, [data]);
+
+  if (loading) {
+    return (
+      <div style={styles.root}>
+        <Sidebar />
+        <div style={styles.content}>
+          <div style={styles.stage}>
+            <div style={styles.topbarRow}>
+              <div style={{ flex: 1 }}>
+                <Topbar placeholder="Search products" onSearchChange={onSearchNoop} defaultFilter="all" onViewAllPath="/Noti" />
+              </div>
+            </div>
+            <div style={{ color: THEME.text, opacity: 0.9 }}>Loading product...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div style={styles.root}>
+        <Sidebar />
+        <div style={styles.content}>
+          <div style={styles.stage}>
+            <div style={styles.topbarRow}>
+              <div style={{ flex: 1 }}>
+                <Topbar placeholder="Search products" onSearchChange={onSearchNoop} defaultFilter="all" onViewAllPath="/Noti" />
+              </div>
+            </div>
+            <div style={{ color: "#DC2626", fontWeight: 700, marginBottom: 8 }}>Error: {err}</div>
+            <button style={styles.btnPrimary} onClick={() => navigate("/product")}>Back to Products</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!form) return null;
 
   return (
     <div style={styles.root}>
       <Sidebar />
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* Topbar (ไม่มีไอคอนกระดิ่งซ้ำในหน้านี้) */}
           <div style={styles.topbarRow}>
             <div style={{ flex: 1 }}>
-              <Topbar
-                placeholder="Search products"
-                onSearchChange={onSearchNoop}
-                defaultFilter="all"
-                onViewAllPath="/Noti"
-              />
+              <Topbar placeholder="Search products" onSearchChange={onSearchNoop} defaultFilter="all" onViewAllPath="/Noti" />
             </div>
           </div>
 
-          {/* Heading & breadcrumb */}
           <div style={styles.title}>Products</div>
           <div style={styles.breadcrumb}>
             <span style={{ cursor: "pointer" }} onClick={() => navigate("/product")}>Product</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Product Detail</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: "#1D4ED8", fontWeight: 700 }}>Product Detail</span>
           </div>
 
-          {/* Card */}
           <div style={styles.card}>
-            {/* Section: Product Information */}
+            {/* Product Information */}
             <div style={styles.section}>
               <div style={styles.sectionHead}>Product Information</div>
-
               <div style={styles.grid3}>
                 <div style={styles.field}>
                   <div style={styles.label}>Product Name</div>
@@ -179,10 +347,9 @@ export default function ProductDetail() {
 
             <hr style={styles.divider} />
 
-            {/* Section: License Policy */}
+            {/* License Policy */}
             <div style={styles.section}>
               <div style={styles.sectionHead}>License Policy</div>
-
               <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 16, justifyContent: "start", alignItems: "end" }}>
                 <div>
                   <div style={styles.label}>Supported License Types</div>
@@ -203,6 +370,7 @@ export default function ProductDetail() {
                   <div style={styles.label}>License Duration</div>
                   <div style={{ ...styles.selectWrap, ...styles.selectRead, width: "100%" }}>
                     <select style={{ ...styles.select, ...styles.selectRead }} value={form.licenseDuration} disabled>
+                      <option value="">—</option>
                       <option value="7">7 days</option>
                       <option value="30">30 days</option>
                       <option value="90">90 days</option>
@@ -217,10 +385,9 @@ export default function ProductDetail() {
 
             <hr style={styles.divider} />
 
-            {/* Section: Constraints */}
+            {/* Constraints */}
             <div style={styles.section}>
               <div style={styles.sectionHead}>Constraints</div>
-
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
                 <div style={styles.field}>
                   <label style={styles.check}>
@@ -228,14 +395,12 @@ export default function ProductDetail() {
                   </label>
                   <input style={{ ...styles.input, ...styles.inputRead }} value={form.limitSeats} readOnly />
                 </div>
-
                 <div style={styles.field}>
                   <label style={styles.check}>
                     <input type="checkbox" checked={form.limitDeviceEnabled} disabled /> Max Device
                   </label>
                   <input style={{ ...styles.input, ...styles.inputRead }} value={form.limitDevice} readOnly />
                 </div>
-
                 <div style={styles.field}>
                   <label style={styles.check}>
                     <input type="checkbox" checked={form.rateLimitEnabled} disabled /> Rate Limit
@@ -245,7 +410,20 @@ export default function ProductDetail() {
               </div>
 
               <div style={styles.actions}>
-                <button style={styles.btnPrimary} onClick={() => navigate("/products/edit/:id")}>Edit Product</button>
+                <button
+                  style={styles.btnPrimary}
+                  onClick={() => navigate(`/products/edit/${id}`)}
+                >
+                  Edit Product
+                </button>
+                <button
+                  style={styles.btnDanger}
+                  onClick={onDelete}
+                  disabled={deleting}
+                  title="Delete this product"
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </button>
               </div>
             </div>
           </div>

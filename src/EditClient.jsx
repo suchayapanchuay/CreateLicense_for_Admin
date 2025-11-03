@@ -6,23 +6,27 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Topbar from "./Topbar";
 import { API_BASE } from "./config";
 
-/* THEME */
+/* THEME (Light, match Dashboard) */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  textFaint: "rgba(255,255,255,0.55)",
-  accent: "#3B82F6",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#E8F0FE",
+  border: "rgba(0,0,0,0.08)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  textFaint: "#6B7280",
+  accent: "#2563EB",
 };
 
 /* STYLES */
 const styles = {
   root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
-  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "20px 16px", position: "relative" },
+  stage: {
+    width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16,
+    border: `1px solid ${THEME.border}`, padding: 24, position: "relative",
+    boxShadow: "0 10px 28px rgba(0,0,0,.08)"
+  },
 
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 6px" },
   breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 12 },
@@ -31,29 +35,31 @@ const styles = {
 
   typeSelectWrap: { position: "relative", width: 220, marginBottom: 12 },
   typeSelect: {
-    width: "100%", appearance: "none", background: "rgba(255,255,255,0.08)", color: THEME.text,
-    border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 40px 10px 12px", fontWeight: 700, cursor: "pointer"
+    width: "100%", appearance: "none",
+    background: THEME.stageBg, color: THEME.text,
+    border: `1px solid ${THEME.border}`, borderRadius: 8,
+    padding: "10px 40px 10px 12px", fontWeight: 700, cursor: "pointer"
   },
   caret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: THEME.textFaint, pointerEvents: "none" },
 
   grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 12 },
   label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
   pillInput: {
-    width: "80%", background: "rgba(255,255,255,0.06)", color: THEME.text,
+    width: "80%", background: "#FFFFFF", color: THEME.text,
     border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none"
   },
 
-  credBox: { border: `1px solid ${THEME.border}`, borderRadius: 10, padding: 16, marginTop: 12 },
+  credBox: { border: `1px solid ${THEME.border}`, borderRadius: 10, padding: 16, marginTop: 12, background: "#FFFFFF" },
   inline: { display: "flex", gap: 10, alignItems: "center" },
   smallBtn: { border: "none", padding: "8px 10px", fontWeight: 700, borderRadius: 8, cursor: "pointer" },
-  smallBtnBlue: { background: "#52B1E6", color: "#062033" },
-  smallBtnGreen: { background: "#3DD9B0", color: "#062033" },
+  smallBtnBlue: { background: "#60A5FA", color: "#0B1A2D" },
+  smallBtnGreen: { background: "#86EFAC", color: "#0B1A2D" },
 
   actions: { display: "flex", gap: 10, marginTop: 18 },
   btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
-  btnGhost: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text },
+  btnGhost: { borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: `1px solid ${THEME.border}`, background: "#FFFFFF", color: THEME.text },
 
-  banner: (bg) => ({ background: bg, color: "#062033", borderRadius: 10, padding: "10px 12px", fontWeight: 700, marginBottom: 12 }),
+  banner: (bg, fg = "#0B1A2D") => ({ background: bg, color: fg, borderRadius: 10, padding: "10px 12px", fontWeight: 700, marginBottom: 12, border: `1px solid ${THEME.border}` }),
 };
 
 /* HELPERS */
@@ -173,11 +179,9 @@ export default function EditClient() {
     const p = {
       requestType: reqType,
       profile,
-      // credentials: ใส่เฉพาะเมื่อกรอกมา (ป้องกันไปแก้ username/password โดยไม่ได้ตั้งใจ)
       ...(form.username || form.password
         ? { credentials: { username: form.username, password: form.password } }
         : {}),
-      // trial: ใส่เฉพาะเมื่อชนิดเป็น trial และมีจำนวนวัน
       ...(reqType === "trial"
         ? { trial: { days: parseTrialDays(form.trialDays) } }
         : {}),
@@ -192,7 +196,7 @@ export default function EditClient() {
       setErr("");
       await patchJSON(`${API_BASE}/clients/${id}`, payload);
       setFlash("Saved");
-      // กลับไปหน้า detail เดิม
+      // ⛔️ ห้ามเปลี่ยน path: คง navigate ไป /client/${id} ตามไฟล์เดิม
       navigate(`/client/${id}`, { state: { flash: "Client updated" } });
     } catch (e) {
       setErr(String(e?.message || e));
@@ -207,18 +211,20 @@ export default function EditClient() {
       <Sidebar />
       <div style={styles.content}>
         <div style={styles.stage}>
+          {/* คง Topbar และ props เดิม (path ไม่เปลี่ยน) */}
           <Topbar placeholder="Search clients" defaultFilter="all" onViewAllPath="/Noti" />
 
           <div style={styles.title}>Edit Client</div>
           <div style={styles.breadcrumb}>
             <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span>
             &nbsp;&gt;&nbsp;
+            {/* ⛔️ คง path เดิม: /client-details/${id} */}
             <span style={{ cursor: "pointer" }} onClick={() => navigate(`/client-details/${id}`)}>Client Detail</span>
-            &nbsp;&gt;&nbsp; <span style={{ color: "#9CC3FF" }}>Edit Client</span>
+            &nbsp;&gt;&nbsp; <span style={{ color: "#1D4ED8", fontWeight: 700 }}>Edit Client</span>
           </div>
 
-          {!!err && <div style={styles.banner("#FCD34D")}>{err}</div>}
-          {!!flash && <div style={styles.banner("#34D399")}>{flash}</div>}
+          {!!err && <div style={styles.banner("#FEF3C7")}>{err}</div>}
+          {!!flash && <div style={styles.banner("#ECFDF5")}>{flash}</div>}
 
           <div style={styles.card}>
             {/* Request type */}

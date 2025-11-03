@@ -8,33 +8,36 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { API_BASE } from "./config";
 
-/* THEME */
+/* THEME (Light to match Dashboard/Clients/etc.) */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  cardGrad: "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.00) 100%)",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.94)",
-  textMut: "rgba(255,255,255,0.72)",
-  textFaint: "rgba(255,255,255,0.55)",
-  accent: "#3B82F6",
-  ok: "#22C55E",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#E8F0FE",
+  cardGrad: "linear-gradient(180deg, rgba(37,99,235,0.06) 0%, rgba(255,255,255,0) 100%)",
+  border: "rgba(0,0,0,0.08)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  textFaint: "#6B7280",
+  accent: "#2563EB",
+  ok: "#16A34A",
   warn: "#F59E0B",
-  danger: "#EF4444",
+  danger: "#DC2626",
 };
 
 /* STYLES */
 const styles = {
   root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px" },
-  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24 },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "20px 16px" },
+  stage: {
+    width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16,
+    border: `1px solid ${THEME.border}`, padding: 24, boxShadow: "0 10px 28px rgba(0,0,0,.08)"
+  },
 
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 6px", letterSpacing: 0.2 },
   breadcrumb: { color: THEME.textFaint, fontWeight: 600, marginBottom: 18 },
 
   headerCard: {
-    background: THEME.card,
+    background: "#FFFFFF",
     border: `1px solid ${THEME.border}`,
     borderRadius: 16,
     padding: 18,
@@ -59,7 +62,7 @@ const styles = {
       display: "inline-flex",
       alignItems: "center",
       gap: 8,
-      background: "rgba(255,255,255,0.06)",
+      background: "#F3F6FF",
       border: `1px solid ${THEME.border}`,
       padding: "8px 12px",
       borderRadius: 999,
@@ -73,7 +76,7 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    background: "rgba(255,255,255,0.06)",
+    background: "#FFFFFF",
     border: `1px solid ${THEME.border}`,
     padding: "10px 12px",
     borderRadius: 12,
@@ -85,7 +88,7 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    background: "rgba(255,255,255,0.06)",
+    background: "#FFFFFF",
     border: `1px solid ${THEME.border}`,
     padding: "8px 10px",
     borderRadius: 10,
@@ -95,11 +98,11 @@ const styles = {
   },
 
   usage: { marginTop: 10 },
-  bar: { height: 10, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden", border: `1px solid ${THEME.border}` },
+  bar: { height: 10, background: "#E5EDFF", borderRadius: 999, overflow: "hidden", border: `1px solid ${THEME.border}` },
   barFill: (pct) => ({ height: "100%", width: `${pct}%`, background: THEME.accent }),
 
   /* details table */
-  table: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 16, overflow: "hidden" },
+  table: { background: "#FFFFFF", border: `1px solid ${THEME.border}`, borderRadius: 16, overflow: "hidden" },
   row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, padding: "14px 18px", borderBottom: `1px solid ${THEME.border}` },
   cellLabel: { color: THEME.text, fontWeight: 900 },
   cellValue: { color: THEME.textMut, fontWeight: 800, textAlign: "right" },
@@ -110,13 +113,13 @@ const styles = {
   rightActions: { display: "flex", justifyContent: "flex-start" },
   btn: { display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 10, padding: "10px 12px", fontWeight: 900, cursor: "pointer", border: "none" },
   btnPrimary: { background: THEME.accent, color: "#fff" },
-  btnGhost: { background: "rgba(255,255,255,0.06)", color: THEME.text, border: `1px solid ${THEME.border}` },
+  btnGhost: { background: "#FFFFFF", color: THEME.text, border: `1px solid ${THEME.border}` },
 
-  err: { marginBottom: 12, color: "#FCA5A5", fontWeight: 800 },
+  err: { marginBottom: 12, color: "#DC2626", fontWeight: 800 },
 
   /* skeleton */
-  skel: { display: "inline-block", height: 14, background: "rgba(255,255,255,0.08)", borderRadius: 8, width: 140 },
-  skelWide: { display: "inline-block", height: 14, background: "rgba(255,255,255,0.08)", borderRadius: 8, width: 220 },
+  skel: { display: "inline-block", height: 14, background: "#E5EDFF", borderRadius: 8, width: 140 },
+  skelWide: { display: "inline-block", height: 14, background: "#E5EDFF", borderRadius: 8, width: 220 },
 };
 
 function fmtDate(s) {
@@ -240,13 +243,13 @@ export default function LicenseDetail() {
 
           <div style={styles.title}>License Detail</div>
           <div style={styles.breadcrumb}>
-            <span style={{ cursor: "pointer" }} onClick={() => navigate("/client")}>Clients</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>License Detail</span>
+            <span style={{ cursor: "pointer", color: THEME.text }} onClick={() => navigate("/client")}>Clients</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: "#1D4ED8", fontWeight: 700 }}>License Detail</span>
           </div>
 
           {err ? <div style={styles.err}>{err}</div> : null}
 
-          {/* ===== Header Card (สวย/กะทัดรัด) ===== */}
+          {/* ===== Header Card ===== */}
           <div style={styles.headerCard} ref={pdfRef}>
             <div style={styles.headerGrad} />
             <div style={styles.headerGrid}>

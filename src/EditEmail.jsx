@@ -1,38 +1,151 @@
+// src/pages/EditEmail.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Sidebar from "./SideBar";
 import Topbar from "./Topbar";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE } from "./config";
 
+/* THEME — Light (เหมือนหน้า List) */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  accent: "#3B82F6",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#FFFFFF",
+  border: "rgba(0,0,0,0.10)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  textFaint: "#6B7280",
+  accent: "#2563EB",
+  goodText: "#065F46",
+  goodBg: "#DCFCE7",
+  warnText: "#92400E",
+  warnBg: "#FEF3C7",
+  dangerText: "#991B1B",
+  dangerBg: "#FEE2E2",
 };
 
+/* STYLES */
 const styles = {
-  root: { display: "flex", minHeight: "100vh", background: THEME.pageBg, fontFamily: "Inter, system-ui" },
+  root: {
+    display: "flex",
+    minHeight: "100vh",
+    background: THEME.pageBg,
+    fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+  },
   content: { flex: 1, display: "flex", justifyContent: "center", padding: 24 },
-  stage: { width: 1152, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+  stage: {
+    width: 1152,
+    background: THEME.stageBg,
+    borderRadius: 16,
+    border: `1px solid ${THEME.border}`,
+    padding: 24,
+    position: "relative",
+    boxShadow: "0 10px 28px rgba(0,0,0,.06)",
+  },
   topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 },
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "20px 0 6px" },
-  breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 18 },
-  formContainer: { display: "flex", gap: 24, marginTop: 20 },
+  breadcrumb: { color: THEME.textFaint, fontWeight: 600, marginBottom: 18 },
+
+  formContainer: { display: "flex", gap: 24, marginTop: 12, alignItems: "flex-start" },
+
   formSection: { flex: 1, display: "flex", flexDirection: "column", gap: 16 },
-  formCard: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 18 },
-  label: { color: THEME.textMut, fontSize: 13, fontWeight: 700, marginBottom: 6 },
-  input: { width: "90%", background: "rgba(255,255,255,0.06)", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none" },
-  textarea: { width: "95%", background: "rgba(255,255,255,0.06)", color: THEME.text, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: "10px 12px", outline: "none", minHeight: 150, resize: "vertical" },
-  radioLabel: { display: "flex", alignItems: "center", gap: 8, color: THEME.text, fontWeight: 600, cursor: "pointer" },
-  radioInput: { appearance: "none", width: 16, height: 16, borderRadius: "50%", border: `2px solid ${THEME.border}`, position: "relative", outline: "none", cursor: "pointer", flexShrink: 0 },
-  previewSection: { flex: 1, background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, padding: 24 },
-  previewTitle: { color: THEME.text, fontSize: 18, fontWeight: 700, marginBottom: 12 },
-  previewBody: { color: THEME.text, whiteSpace: "pre-wrap" },
-  smallMuted: { color: THEME.textMut, fontSize: 12, marginTop: 6 },
+  formCard: {
+    background: THEME.card,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 12,
+    padding: 18,
+    boxShadow: "0 6px 16px rgba(0,0,0,.05)",
+  },
+
+  label: { color: THEME.textMut, fontSize: 13, fontWeight: 800, marginBottom: 6 },
+  input: {
+    width: "90%",
+    background: THEME.card,
+    color: THEME.text,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 10,
+    padding: "10px 12px",
+    outline: "none",
+    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+  },
+  textarea: {
+    width: "95%",
+    background: THEME.card,
+    color: THEME.text,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 10,
+    padding: "10px 12px",
+    outline: "none",
+    minHeight: 180,
+    resize: "vertical",
+    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+  },
+
+  radioGroup: { display: "flex", gap: 18, alignItems: "center", marginTop: 2, color: THEME.text },
+  radioLabel: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: THEME.text },
+
+  smallMuted: { color: THEME.textFaint, fontSize: 12, marginTop: 6 },
+
+  // preview
+  previewSection: {
+    flex: 1,
+    background: THEME.card,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 12,
+    padding: 24,
+    boxShadow: "0 6px 16px rgba(0,0,0,.05)",
+  },
+  previewTitle: { color: THEME.text, fontSize: 18, fontWeight: 900, marginBottom: 12 },
+  previewBody: { color: THEME.text },
+
+  // buttons
+  btnPrimary: {
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontWeight: 900,
+    cursor: "pointer",
+    border: "none",
+    background: THEME.accent,
+    color: "#fff",
+    boxShadow: "0 6px 14px rgba(37,99,235,.25)",
+  },
+  btnGhost: {
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontWeight: 900,
+    cursor: "pointer",
+    border: `1px solid ${THEME.border}`,
+    background: THEME.card,
+    color: THEME.text,
+    boxShadow: "0 4px 10px rgba(0,0,0,.04)",
+  },
+  btnDangerOutline: {
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontWeight: 900,
+    cursor: "pointer",
+    border: `1px solid ${THEME.border}`,
+    background: THEME.card,
+    color: THEME.dangerText,
+    boxShadow: "0 4px 10px rgba(0,0,0,.04)",
+  },
+
+  // util
+  dashed: {
+    border: `1px dashed ${THEME.border}`,
+    borderRadius: 12,
+    padding: 10,
+    background: "#FAFBFF",
+  },
+  err: {
+    color: THEME.dangerText,
+    fontWeight: 900,
+    marginBottom: 10,
+    background: THEME.dangerBg,
+    border: `1px solid ${THEME.border}`,
+    padding: "8px 10px",
+    borderRadius: 8,
+  },
+  hr: { border: "none", height: 1, background: "rgba(0,0,0,0.06)", margin: "14px 0" },
 };
 
 const INIT = { slug: "", name: "", subject: "", body: "", status: "Active", is_html: true };
@@ -48,7 +161,7 @@ export default function EditEmail() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // client/license for real preview
+  // real preview variables
   const [clientQuery, setClientQuery] = useState(""); // client ID or email
   const [clientLoading, setClientLoading] = useState(false);
   const [clientError, setClientError] = useState("");
@@ -58,9 +171,20 @@ export default function EditEmail() {
 
   const previewVars = useMemo(
     () => ({
-      client: { first_name: "Suchaya", last_name: "Panchuay", email: "user@example.com", username: "suchaya", plain_password: "(hidden)" },
-      license: { license_key: "AAAAA-BBBBB-CCCCC-DDDDD", term: "trial", product_sku: "SMART_AUDIT_TRIAL", expires_at: "2025-12-31T15:00:00" },
-      meta: { app_name: "SmartAudit", portal_url: "http://localhost:3000" },
+      client: {
+        first_name: "Suchaya",
+        last_name: "Panchuay",
+        email: "user@example.com",
+        username: "suchaya",
+        plain_password: "(hidden)",
+      },
+      license: {
+        license_key: "AAAAA-BBBBB-CCCCC-DDDDD",
+        term: "trial",
+        product_sku: "SMART_AUDIT_TRIAL",
+        expires_at: "2025-12-31T15:00:00",
+      },
+      meta: { app_name: "SmartAudit", portal_url: window.location.origin },
     }),
     []
   );
@@ -93,7 +217,7 @@ export default function EditEmail() {
     return () => ctrl.abort();
   }, [templateId]);
 
-  // build variables for preview (stable)
+  // build variables for preview
   const buildPreviewVars = useCallback(() => {
     if (loadedClient || loadedLicense) {
       const client = loadedClient || {};
@@ -126,7 +250,7 @@ export default function EditEmail() {
     return previewVars;
   }, [loadedClient, loadedLicense, includePlainPassword, previewVars]);
 
-  // live preview (debounced)
+  // live preview
   useEffect(() => {
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
@@ -218,7 +342,7 @@ export default function EditEmail() {
     try {
       let clientData = null;
 
-      // try by ID
+      // by ID
       try {
         const r1 = await fetch(`${API_BASE}/clients/${encodeURIComponent(clientQuery)}`, { headers });
         if (r1.ok) clientData = await r1.json();
@@ -241,7 +365,7 @@ export default function EditEmail() {
 
       setLoadedClient(clientData);
 
-      // 🔹 โหลด username อัตโนมัติ (ถ้ามี)
+      // load username if exists
       try {
         const rCred = await fetch(`${API_BASE}/clients/${encodeURIComponent(clientData.id)}/credentials`, { headers });
         if (rCred.ok) {
@@ -281,7 +405,6 @@ export default function EditEmail() {
     }
   };
 
-  // extra actions: load username (manual) & generate temp password and send email to user
   const handleLoadUsername = async () => {
     if (!loadedClient?.id) return;
     try {
@@ -295,24 +418,22 @@ export default function EditEmail() {
     }
   };
 
-  // <-- UPDATED: this will request reset AND ask backend to send email to the user -->
+  // Generate temporary password & send by email
   const handleGenerateTempPasswordAndSend = async () => {
     if (!loadedClient?.id) return;
-    if (!loadedClient?.email) {
-      return window.alert("Client has no email to send to.");
-    }
+    if (!loadedClient?.email) return window.alert("Client has no email to send to.");
     if (!window.confirm("Generate a temporary password and send it to the user's email?")) return;
 
     try {
       const payload = {
         length: 12,
         send_email: true,
-        email_to: loadedClient.email,              // ส่งไปหาเมลที่เพิ่งโหลดมา
+        email_to: loadedClient.email,
         notify_subject: `Your ${window.location.hostname} account password`,
         notify_body_text:
           `Hello ${loadedClient.first_name || ""},\n\n` +
           `A temporary password has been generated for your account.\n\n` +
-          `Username: {{username}}\n` +             // backend จะ replace placeholder
+          `Username: {{username}}\n` +
           `Temporary password: {{password}}\n\n` +
           `Please log in and change your password immediately.\n`,
       };
@@ -322,14 +443,11 @@ export default function EditEmail() {
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
       );
 
-      if (!r.ok) {
-        const txt = await r.text();
-        throw new Error(txt || `Request failed: ${r.status}`);
-      }
+      if (!r.ok) throw new Error((await r.text()) || `Request failed: ${r.status}`);
 
       const data = await r.json(); // {client_id, username, temporary_password}
-        setLoadedClient(prev => ({ ...prev, plain_password: data.temporary_password, username: data.username }));
-        setIncludePlainPassword(true);  // ✅ ให้พรีวิวแสดงรหัส
+      setLoadedClient(prev => ({ ...prev, plain_password: data.temporary_password, username: data.username }));
+      setIncludePlainPassword(true);
       window.alert(`Temporary password generated and emailed to ${loadedClient.email}`);
     } catch (e) {
       window.alert(String(e?.message || e));
@@ -349,7 +467,11 @@ export default function EditEmail() {
   };
 
   if (loading) {
-    return <div style={{ color: "#fff", padding: 24 }}>Loading…</div>;
+    return (
+      <div style={{ ...styles.root, alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: THEME.textFaint, fontWeight: 700 }}>Loading…</div>
+      </div>
+    );
   }
 
   return (
@@ -357,25 +479,31 @@ export default function EditEmail() {
       <Sidebar />
       <div style={styles.content}>
         <div style={styles.stage}>
+          {/* Topbar */}
           <div style={styles.topbarRow}>
             <div style={{ flex: 1 }}>
               <Topbar placeholder="Search templates" onSearchChange={() => {}} defaultFilter="all" onViewAllPath="/Noti" />
             </div>
           </div>
+
+          {/* Heading + Breadcrumb */}
           <div style={styles.title}>Setting / Logs</div>
           <div style={styles.breadcrumb}>
             <span>Setting / Logs</span>
-            &nbsp;&gt;&nbsp;<span style={{ cursor: "pointer" }} onClick={() => navigate("/email-template")}>Email Template</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Edit Email Template</span>
+            &nbsp;&gt;&nbsp;
+            <span style={{ cursor: "pointer", color: THEME.accent }} onClick={() => navigate("/email-template")}>
+              Email Template
+            </span>
+            &nbsp;&gt;&nbsp;<span style={{ color: THEME.accent }}>Edit Email Template</span>
           </div>
 
           <div style={styles.formContainer}>
-            {/* left form */}
+            {/* Left: Form */}
             <div style={styles.formSection}>
               <div style={styles.formCard}>
-                {err && <div style={{ color: "#FCA5A5", fontWeight: 800, marginBottom: 10 }}>{err}</div>}
+                {err && <div style={styles.err}>{err}</div>}
 
-                {/* client loader */}
+                {/* Client loader */}
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <input
                     placeholder="Client ID or email (for real preview)"
@@ -383,44 +511,53 @@ export default function EditEmail() {
                     onChange={(e) => setClientQuery(e.target.value)}
                     style={{ ...styles.input, width: "65%" }}
                   />
-                  <button
-                    onClick={handleLoadClient}
-                    disabled={clientLoading}
-                    style={{ borderRadius: 8, padding: "8px 12px", background: THEME.accent, color: "#fff", border: "none", cursor: "pointer" }}
-                  >
+                  <button onClick={handleLoadClient} disabled={clientLoading} style={styles.btnPrimary}>
                     {clientLoading ? "Loading…" : "Load client"}
                   </button>
-                  <label htmlFor="includePwd" style={{ display: "flex", alignItems: "center", gap: 8, color: THEME.textMut, cursor: "pointer" }}>
-                    <input id="includePwd" type="checkbox" checked={includePlainPassword} onChange={(e) => setIncludePlainPassword(e.target.checked)} />
+                  <label
+                    htmlFor="includePwd"
+                    style={{ display: "flex", alignItems: "center", gap: 8, color: THEME.textMut, cursor: "pointer" }}
+                  >
+                    <input
+                      id="includePwd"
+                      type="checkbox"
+                      checked={includePlainPassword}
+                      onChange={(e) => setIncludePlainPassword(e.target.checked)}
+                    />
                     Include plain password
                   </label>
                 </div>
                 <div style={styles.smallMuted}>
-                  หมายเหตุ: ฟีเจอร์นี้จะเรียก API จริงเพื่อดึงข้อมูลผู้ใช้และ license — ให้แน่ใจว่าคุณมีสิทธิ์เข้าถึง API และเข้าใจความเสี่ยงด้านความปลอดภัย (plain password อาจไม่ถูกส่งมาจาก backend).
+                  หมายเหตุ: ฟีเจอร์นี้จะเรียก API จริงเพื่อดึงข้อมูลผู้ใช้และ license — ตรวจสอบสิทธิ์การเข้าถึง API และหลีกเลี่ยงการส่ง/แสดงรหัสผ่านจริงในสภาพแวดล้อมโปรดักชัน
                 </div>
-                {clientError && <div style={{ color: "#FCA5A5", marginTop: 8 }}>{clientError}</div>}
+                {clientError && (
+                  <div style={{ ...styles.err, background: THEME.dangerBg, color: THEME.dangerText }}>{clientError}</div>
+                )}
 
-                {/* loaded client info + actions */}
+                {/* Loaded client */}
                 {loadedClient && (
-                  <div style={{ marginTop: 10, padding: 8, border: `1px dashed ${THEME.border}`, borderRadius: 8 }}>
-                    <div style={{ color: THEME.text, fontWeight: 700 }}>Loaded client:</div>
-                    <div style={{ color: THEME.textMut }}>Name: {loadedClient.first_name || loadedClient.name || "(n/a)"}</div>
+                  <div style={{ ...styles.dashed, marginTop: 10 }}>
+                    <div style={{ color: THEME.text, fontWeight: 900 }}>Loaded client</div>
+                    <div style={{ color: THEME.textMut }}>
+                      Name: {loadedClient.first_name || loadedClient.name || "(n/a)"}
+                    </div>
                     <div style={{ color: THEME.textMut }}>Email: {loadedClient.email || "(n/a)"}</div>
                     <div style={{ color: THEME.textMut }}>Username: {loadedClient.username || "(n/a)"}</div>
                     <div style={{ color: THEME.textMut }}>
-                      Password: {includePlainPassword ? (loadedClient.plain_password || loadedClient.password || "(not provided)") : mask(loadedClient.plain_password || loadedClient.password || "")}
+                      Password:{" "}
+                      {includePlainPassword
+                        ? loadedClient.plain_password || loadedClient.password || "(not provided)"
+                        : mask(loadedClient.plain_password || loadedClient.password || "")}
                     </div>
 
                     <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                      <button
-                        onClick={handleLoadUsername}
-                        style={{ borderRadius: 8, padding: "6px 10px", background: "#334155", color: "#fff", border: "none", cursor: "pointer" }}
-                      >
+                      <button onClick={handleLoadUsername} style={styles.btnGhost}>
                         Load Username
                       </button>
                       <button
                         onClick={handleGenerateTempPasswordAndSend}
-                        style={{ borderRadius: 8, padding: "6px 10px", background: "#ef4444", color: "#fff", border: "none", cursor: "pointer" }}
+                        style={styles.btnPrimary}
+                        title="Generate & send temporary password"
                       >
                         Generate & Send password
                       </button>
@@ -428,33 +565,44 @@ export default function EditEmail() {
                   </div>
                 )}
 
+                {/* Loaded license */}
                 {loadedLicense && (
-                  <div style={{ marginTop: 10, padding: 8, border: `1px dashed ${THEME.border}`, borderRadius: 8 }}>
-                    <div style={{ color: THEME.text, fontWeight: 700 }}>Loaded license:</div>
-                    <div style={{ color: THEME.textMut }}>Key: {loadedLicense.license_key || loadedLicense.key || "(n/a)"}</div>
-                    <div style={{ color: THEME.textMut }}>Product: {loadedLicense.product_sku || loadedLicense.product || "(n/a)"}</div>
-                    <div style={{ color: THEME.textMut }}>Expires: {loadedLicense.expires_at || loadedLicense.expires || "(n/a)"}</div>
+                  <div style={{ ...styles.dashed, marginTop: 10 }}>
+                    <div style={{ color: THEME.text, fontWeight: 900 }}>Loaded license</div>
+                    <div style={{ color: THEME.textMut }}>
+                      Key: {loadedLicense.license_key || loadedLicense.key || "(n/a)"}
+                    </div>
+                    <div style={{ color: THEME.textMut }}>
+                      Product: {loadedLicense.product_sku || loadedLicense.product || "(n/a)"}
+                    </div>
+                    <div style={{ color: THEME.textMut }}>
+                      Expires: {loadedLicense.expires_at || loadedLicense.expires || "(n/a)"}
+                    </div>
                   </div>
                 )}
 
+                <hr style={styles.hr} />
 
-                <hr style={{ border: "none", height: 1, background: "rgba(255,255,255,0.03)", margin: "12px 0" }} />
-
+                {/* Fields */}
                 <div style={styles.label}>Slug (read-only)</div>
                 <input name="slug" value={form.slug} readOnly style={{ ...styles.input, opacity: 0.6 }} />
+
                 <div style={styles.label}>Name</div>
                 <input name="name" value={form.name} onChange={handleChange} style={styles.input} />
+
                 <div style={styles.label}>Subject</div>
                 <input name="subject" value={form.subject} onChange={handleChange} style={styles.input} />
 
-                <div style={{ display: "flex", gap: 18, alignItems: "center", marginTop: 10 }}>
+                <div style={{ marginTop: 10 }}>
                   <div style={styles.label}>Status</div>
-                  {["Active", "Draft", "Disabled"].map((s) => (
-                    <label key={s} style={styles.radioLabel}>
-                      <input type="radio" name="status" value={s} checked={form.status === s} onChange={handleChange} style={styles.radioInput} />
-                      {s}
-                    </label>
-                  ))}
+                  <div style={styles.radioGroup}>
+                    {["Active", "Draft", "Disabled"].map((s) => (
+                      <label key={s} style={styles.radioLabel}>
+                        <input type="radio" name="status" value={s} checked={form.status === s} onChange={handleChange} />
+                        {s}
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, color: THEME.text }}>
@@ -462,42 +610,35 @@ export default function EditEmail() {
                   <label htmlFor="is_html">Send as HTML</label>
                 </div>
 
-                <div style={{ marginTop: 12, ...styles.label }}>Body</div>
-                <textarea name="body" value={form.body} onChange={handleChange} style={styles.textarea} />
+                <div style={{ marginTop: 12 }}>
+                  <div style={styles.label}>Body</div>
+                  <textarea name="body" value={form.body} onChange={handleChange} style={styles.textarea} />
+                </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 18 }}>
-                  {/* delete */}
+                {/* Actions */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                    marginTop: 18,
+                  }}
+                >
                   <button
                     onClick={handleDelete}
                     disabled={deleting || saving}
-                    style={{
-                      borderRadius: 8,
-                      padding: "10px 14px",
-                      fontWeight: 800,
-                      cursor: deleting || saving ? "not-allowed" : "pointer",
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(239, 68, 68, 0.18)",
-                      color: "#FCA5A5",
-                    }}
+                    style={styles.btnDangerOutline}
                     title="Delete this template"
                   >
                     {deleting ? "Deleting…" : "Delete"}
                   </button>
 
-                  {/* cancel/save */}
                   <div style={{ display: "flex", gap: 10 }}>
-                    <button
-                      style={{ borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: "#8B9EB8", color: "#fff" }}
-                      onClick={() => navigate("/email-template")}
-                      disabled={deleting}
-                    >
+                    <button style={styles.btnGhost} onClick={() => navigate("/email-template")} disabled={deleting}>
                       Cancel
                     </button>
-                    <button
-                      style={{ borderRadius: 8, padding: "10px 14px", fontWeight: 800, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" }}
-                      disabled={saving || deleting}
-                      onClick={handleSave}
-                    >
+                    <button style={styles.btnPrimary} disabled={saving || deleting} onClick={handleSave}>
                       {saving ? "Saving..." : "Save Change"}
                     </button>
                   </div>
@@ -505,10 +646,12 @@ export default function EditEmail() {
               </div>
             </div>
 
-            {/* right preview */}
+            {/* Right: Preview */}
             <div style={styles.previewSection}>
               <div style={styles.previewTitle}>{preview.subject || "(preview subject)"}</div>
-              <PreviewBody />
+              <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 12 }}>
+                <PreviewBody />
+              </div>
             </div>
           </div>
         </div>

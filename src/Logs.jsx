@@ -1,23 +1,25 @@
 // src/pages/Logs.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar from "./SideBar";
-import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import Topbar from "./Topbar";
 
+/* THEME — Light (ให้กลมกับหน้าอื่น) */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  textFaint: "rgba(255,255,255,0.55)",
-  accent: "#3B82F6",
-  btn: "#3B82F6",
-  btnText: "#fff",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#FFFFFF",
+  border: "rgba(0,0,0,0.10)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  textFaint: "#6B7280",
+  accent: "#2563EB",
+  goodBg: "#DCFCE7",
+  goodText: "#065F46",
+  dangerBg: "#FEE2E2",
+  dangerText: "#991B1B",
 };
 
 const activity = [
@@ -34,38 +36,105 @@ const activity = [
 ];
 
 const styles = {
-  root: { display: "flex", minHeight: "100vh", background: THEME.pageBg, fontFamily: "Inter, system-ui" },
+  root: {
+    display: "flex",
+    minHeight: "100vh",
+    background: THEME.pageBg,
+    fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+  },
   content: { flex: 1, display: "flex", justifyContent: "center", padding: 24 },
-  stage: { width: 1152, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+  stage: {
+    width: 1152,
+    background: THEME.stageBg,
+    borderRadius: 16,
+    border: `1px solid ${THEME.border}`,
+    padding: 24,
+    position: "relative",
+    boxShadow: "0 10px 28px rgba(0,0,0,.06)",
+  },
 
-  /* Topbar แบบรวมศูนย์ */
   topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 },
 
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "20px 0 6px" },
-  breadcrumb: { color: THEME.textMut, fontWeight: 600, marginBottom: 18 },
+  breadcrumb: { color: THEME.textFaint, fontWeight: 600, marginBottom: 18 },
 
-  toolbar: { display: "flex", justifyContent: "flex-end", marginBottom: 20, gap: 10, alignItems: "center" },
+  toolbar: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginBottom: 20,
+    gap: 10,
+    alignItems: "center",
+  },
   dropdown: {
-    width: 140, padding: "6px 10px", borderRadius: 6, border: `1px solid ${THEME.border}`,
-    backgroundColor: THEME.card, color: THEME.text, fontSize: 14, outline: "none",
-    cursor: "pointer", appearance: "none",
+    width: 160,
+    padding: "8px 10px",
+    borderRadius: 10,
+    border: `1px solid ${THEME.border}`,
+    backgroundColor: THEME.card,
+    color: THEME.text,
+    fontSize: 14,
+    outline: "none",
+    cursor: "pointer",
+    appearance: "none",
+    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
   },
   exportButton: {
-    backgroundColor: THEME.accent, color: THEME.btnText, padding: "8px 16px", border: "none",
-    borderRadius: 6, cursor: "pointer", fontWeight: 700,
+    backgroundColor: THEME.accent,
+    color: "#fff",
+    padding: "10px 14px",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontWeight: 900,
+    boxShadow: "0 6px 14px rgba(37,99,235,.25)",
   },
-  datePickerContainer: { position: "relative", display: "inline-block" },
   customDatePickerInput: {
-    padding: "6px 10px", borderRadius: 6, border: `1px solid ${THEME.border}`,
-    backgroundColor: THEME.card, color: THEME.text, width: "140px", outline: "none",
+    padding: "8px 10px",
+    borderRadius: 10,
+    border: `1px solid ${THEME.border}`,
+    backgroundColor: THEME.card,
+    color: THEME.text,
+    width: 160,
+    outline: "none",
+    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+    cursor: "pointer",
+    textAlign: "left",
   },
 
-  tableWrap: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: "hidden" },
-  th: {
-    color: THEME.textFaint, fontWeight: 700, padding: "10px 16px",
-    background: "rgba(255, 255, 255, 0.06)", textAlign: "left",
+  tableWrap: {
+    background: THEME.card,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 12,
+    overflow: "hidden",
+    boxShadow: "0 6px 16px rgba(0,0,0,.05)",
   },
-  td: { padding: "16px 16px", color: THEME.textMut, fontWeight: 500, whiteSpace: "nowrap" },
+  thRow: {
+    display: "grid",
+    gridTemplateColumns: "2fr 1.6fr 1.6fr",
+    background: "#FAFBFF",
+    borderBottom: `1px solid ${THEME.border}`,
+  },
+  th: {
+    color: THEME.text,
+    fontWeight: 800,
+    padding: "12px 16px",
+    textAlign: "left",
+  },
+  row: {
+    display: "grid",
+    gridTemplateColumns: "2fr 1.6fr 1.6fr",
+    alignItems: "center",
+    borderTop: `1px solid ${THEME.border}`,
+    background: "#FFFFFF",
+  },
+  td: {
+    padding: "14px 16px",
+    color: THEME.textMut,
+    fontWeight: 500,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
 };
 
 /* Custom DatePicker input */
@@ -76,7 +145,6 @@ const CustomDatePickerInput = React.forwardRef(({ value, onClick }, ref) => (
 ));
 
 export default function Logs() {
-  const navigate = useNavigate();
   const onSearchNoop = () => {};
 
   const [filters, setFilters] = useState({ user: "", action: "", date: null });
@@ -93,6 +161,7 @@ export default function Logs() {
     if (appliedFilters.date) {
       const itemDate = moment(item.timestamp, "YYYY-MM-DD HH:mm");
       const selectedDate = moment(appliedFilters.date);
+      // แสดงรายการตั้งแต่วันที่เลือก (>= วันนั้น)
       dateMatch = itemDate.isSameOrAfter(selectedDate, "day");
     }
     return userMatch && actionMatch && dateMatch;
@@ -101,7 +170,8 @@ export default function Logs() {
   const exportCSV = (data) => {
     const header = ["Timestamp", "User", "Action"];
     const rows = data.map((item) => [item.timestamp, item.user, item.action]);
-    const csvContent = "data:text/csv;charset=utf-8," + [header, ...rows].map((e) => e.join(",")).join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8," + [header, ...rows].map((e) => e.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -119,7 +189,7 @@ export default function Logs() {
       <Sidebar />
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* Topbar (ใช้คอมโพเนนต์กลาง, ไม่มี panel กระดิ่งซ้ำ) */}
+          {/* Topbar */}
           <div style={styles.topbarRow}>
             <div style={{ flex: 1 }}>
               <Topbar
@@ -134,8 +204,8 @@ export default function Logs() {
           {/* Heading & Breadcrumb */}
           <div style={styles.title}>Setting / Logs</div>
           <div style={styles.breadcrumb}>
-            <span style={{ cursor: "pointer" }} onClick={() => navigate("/setting")}>Setting / Logs</span>
-            &nbsp;&gt;&nbsp;<span style={{ color: "#9CC3FF" }}>Logs</span>
+            <span>Setting / Logs</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: THEME.accent }}>Logs</span>
           </div>
 
           {/* Filters */}
@@ -146,7 +216,9 @@ export default function Logs() {
               onChange={(e) => setFilters({ ...filters, user: e.target.value })}
             >
               {uniqueUsers.map((user) => (
-                <option key={user} value={user}>{user || "All Users"}</option>
+                <option key={user} value={user}>
+                  {user || "All Users"}
+                </option>
               ))}
             </select>
 
@@ -156,7 +228,9 @@ export default function Logs() {
               onChange={(e) => setFilters({ ...filters, action: e.target.value })}
             >
               {uniqueActions.map((action) => (
-                <option key={action} value={action}>{action || "All Actions"}</option>
+                <option key={action} value={action}>
+                  {action || "All Actions"}
+                </option>
               ))}
             </select>
 
@@ -165,7 +239,6 @@ export default function Logs() {
               onChange={(date) => setFilters({ ...filters, date })}
               customInput={<CustomDatePickerInput />}
               dateFormat="yyyy-MM-dd"
-              calendarClassName="dark-theme-calendar"
             />
 
             <button style={styles.exportButton} onClick={() => exportCSV(filteredActivities)}>
@@ -175,52 +248,24 @@ export default function Logs() {
 
           {/* Table */}
           <div style={styles.tableWrap}>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 12px" }}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Time Stamp</th>
-                  <th style={styles.th}>User</th>
-                  <th style={styles.th}>Action</th>
-                </tr>
-              </thead>
-              <tbody style={{ background: THEME.card }}>
-                {filteredActivities.map((item) => (
-                  <tr key={item.id} style={{ borderTop: `1px solid ${THEME.border}` }}>
-                    <td style={styles.td}>{item.timestamp}</td>
-                    <td style={styles.td}>{item.user}</td>
-                    <td style={styles.td}>{item.action}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            <div style={styles.thRow}>
+              <div style={styles.th}>Time Stamp</div>
+              <div style={styles.th}>User</div>
+              <div style={styles.th}>Action</div>
+            </div>
 
-          {/* (ออปชัน) ปรับสีปฏิทินเป็นโทนมืดให้เข้ากับธีม */}
-          <style>{`
-            .dark-theme-calendar.react-datepicker {
-              background: #0E2240;
-              border: 1px solid ${THEME.border};
-              color: ${THEME.text};
-            }
-            .dark-theme-calendar .react-datepicker__header {
-              background-color: #10294a;
-              border-bottom: 1px solid ${THEME.border};
-            }
-            .dark-theme-calendar .react-datepicker__current-month,
-            .dark-theme-calendar .react-datepicker__day-name {
-              color: ${THEME.text};
-              font-weight: 700;
-            }
-            .dark-theme-calendar .react-datepicker__day { color: ${THEME.text}; }
-            .dark-theme-calendar .react-datepicker__day--selected,
-            .dark-theme-calendar .react-datepicker__day--in-range,
-            .dark-theme-calendar .react-datepicker__day--keyboard-selected {
-              background-color: ${THEME.accent};
-            }
-            .dark-theme-calendar .react-datepicker__day:hover {
-              background-color: rgba(59,130,246,0.4);
-            }
-          `}</style>
+            {filteredActivities.map((item) => (
+              <div key={item.id} style={styles.row}>
+                <div style={styles.td}>{item.timestamp}</div>
+                <div style={styles.td}>{item.user}</div>
+                <div style={styles.td}>{item.action}</div>
+              </div>
+            ))}
+
+            {!filteredActivities.length && (
+              <div style={{ padding: 16, color: THEME.textFaint }}>No logs found</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

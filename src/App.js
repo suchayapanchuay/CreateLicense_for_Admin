@@ -10,7 +10,6 @@ import Apikeys from './Apikeys';
 import Email from './Email';
 import Logs from './Logs';
 import Admin from './Admin';
-import AdminEdit from './AdminEdit';
 import AddAdmin from './AddAdmin';
 import AdminDetail from './AdminDetail';
 import Product from './Product';
@@ -28,6 +27,7 @@ import ApiDetail from './ApiDetail' ;
 import CreateAPI from './CreateAPI' ;
 import CreateEmail from './CreateEmail' ;
 import EditEmail from './EditEmail' ;
+import "./index.css";
 
 function App() {
   return (
@@ -40,7 +40,6 @@ function App() {
         <Route path="/client/add" element={<AddClient />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/admin-users" element={<Admin />} />
-        <Route path="/admin-users/edit/:id" element={<AdminEdit />} />
         <Route path="/admin-users/add" element={<AddAdmin />} />
         <Route path="/admin-users/:id" element={<AdminDetail />} />
         <Route path="/api-keys" element={<Apikeys />} />

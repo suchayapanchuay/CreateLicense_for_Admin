@@ -6,22 +6,28 @@ import { useNavigate } from "react-router-dom";
 import Topbar from "./Topbar";
 import { API_BASE } from "./config";
 
-/* -------- THEME -------- */
+/* -------- THEME: match Dashboard (Light Blue) -------- */
 const THEME = {
-  pageBg: "#0B1A2D",
-  stageBg: "#0E1D33",
-  card: "#13253D",
-  border: "rgba(255,255,255,0.12)",
-  text: "rgba(255,255,255,0.92)",
-  textMut: "rgba(255,255,255,0.70)",
-  accent: "#3B82F6",
+  pageBg: "#F5F8FF",
+  stageBg: "#FFFFFF",
+  card: "#E8F0FE",
+  border: "rgba(0,0,0,0.08)",
+  text: "#0B1A2D",
+  textMut: "#4B5563",
+  accent: "#2563EB",
+  faintBg: "#F9FBFF",
+  warn: "#DC2626",
 };
 
 /* -------- STYLES -------- */
 const styles = {
-  root: { display: "flex", minHeight: "1024px", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
-  stage: { width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16, border: `1px solid ${THEME.border}`, padding: 24, position: "relative" },
+  root: { display: "flex", minHeight: "100vh", background: THEME.pageBg, fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" },
+  content: { flex: 1, display: "flex", justifyContent: "center", padding: "20px 16px", position: "relative" },
+  stage: {
+    width: 1152, minHeight: 988, background: THEME.stageBg, borderRadius: 16,
+    border: `1px solid ${THEME.border}`, padding: 24, position: "relative",
+    boxShadow: "0 10px 28px rgba(0,0,0,.08)"
+  },
 
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 20px" },
 
@@ -31,27 +37,36 @@ const styles = {
   selectWrap: { position: "relative", display: "inline-block" },
   select: {
     appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
-    background: THEME.card, color: THEME.text, border: `1px solid ${THEME.border}`,
+    background: THEME.stageBg, color: THEME.text, border: `1px solid ${THEME.border}`,
     borderRadius: 8, padding: "8px 40px 8px 12px", fontWeight: 600, fontSize: 14, cursor: "pointer",
   },
-  selectCaret: { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: THEME.textMut, fontSize: 18 },
+  selectCaret: {
+    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+    pointerEvents: "none", color: THEME.textMut, fontSize: 18
+  },
 
   rightGroup: { display: "flex", alignItems: "center", gap: 10 },
   btn: {
     borderRadius: 8, padding: "10px 14px", fontWeight: 700, cursor: "pointer",
     border: `1px solid ${THEME.border}`, background: "transparent", color: THEME.text,
   },
-  btnPrimary: { borderRadius: 8, padding: "10px 14px", fontWeight: 700, cursor: "pointer", border: "none", background: THEME.accent, color: "#fff" },
+  btnPrimary: {
+    borderRadius: 8, padding: "10px 14px", fontWeight: 700, cursor: "pointer",
+    border: "none", background: THEME.accent, color: "#fff",
+  },
 
   /* table */
-  tableWrap: { background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: "hidden" },
+  tableWrap: {
+    background: THEME.card, border: `1px solid ${THEME.border}`, borderRadius: 12, overflow: "hidden"
+  },
   header: {
-    background: "rgba(255,255,255,0.06)",
+    background: THEME.faintBg,
     display: "grid",
     gridTemplateColumns: "2.6fr 2fr 2.6fr 1.2fr 1fr", // Name | Company | Email | Type | Actions
     padding: "12px 16px",
     color: THEME.text,
-    fontWeight: 700,
+    fontWeight: 800,
+    borderBottom: `1px solid ${THEME.border}`,
   },
   row: {
     display: "grid",
@@ -59,21 +74,24 @@ const styles = {
     alignItems: "center",
     padding: "16px 16px",
     borderTop: `1px solid ${THEME.border}`,
+    background: "#FFFFFF",
   },
 
   /* cells */
   clientCell: { display: "grid", gap: 4 },
-  clientName: { color: THEME.text, fontWeight: 700 },
-  clientCompanyLink: { color: "#67B3FF", fontWeight: 600, cursor: "pointer", width: "fit-content" },
-  companyCol: { color: THEME.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  clientName: { color: THEME.text, fontWeight: 800 },
+  clientCompanyLink: { color: "#1D4ED8", fontWeight: 600, cursor: "pointer", width: "fit-content" },
+  companyCol: {
+    color: THEME.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+  },
   email: { color: THEME.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
 
   typeBadge: (t) => {
     const map = {
-      trial: { bg: "rgba(59,130,246,0.25)", fg: "#CFE1FF" },
-      purchase: { bg: "rgba(16,185,129,0.25)", fg: "#CFFDEA" },
-      support: { bg: "rgba(234,179,8,0.25)", fg: "#FFF6C7" },
-      default: { bg: "rgba(148,163,184,0.25)", fg: "#E2E8F0" },
+      trial: { bg: "rgba(37,99,235,0.12)", fg: "#1E40AF" },      // blue
+      purchase: { bg: "rgba(16,185,129,0.14)", fg: "#065F46" },  // green
+      support: { bg: "rgba(234,179,8,0.18)", fg: "#92400E" },    // amber
+      default: { bg: "rgba(148,163,184,0.18)", fg: "#334155" },  // slate
     };
     const c = map[t] || map.default;
     return {
@@ -85,12 +103,13 @@ const styles = {
       background: c.bg,
       color: c.fg,
       textTransform: "capitalize",
+      border: `1px solid ${THEME.border}`,
     };
   },
   eyeBtn: {
-    width: 34, height: 34, display: "grid", placeItems: "center",
-    borderRadius: "999px", border: `1px solid ${THEME.border}`,
-    background: "transparent", color: THEME.text, cursor: "pointer",
+    width: 36, height: 36, display: "grid", placeItems: "center",
+    borderRadius: "10px", border: `1px solid ${THEME.border}`,
+    background: THEME.stageBg, color: THEME.text, cursor: "pointer",
   },
 
   /* pagination (placeholder) */
@@ -98,7 +117,7 @@ const styles = {
   pageBtn: {
     width: 32, height: 32, borderRadius: 8, border: `1px solid ${THEME.border}`,
     display: "grid", placeItems: "center", color: THEME.textMut, cursor: "pointer",
-    background: "transparent", fontWeight: 600, fontSize: 16,
+    background: THEME.stageBg, fontWeight: 600, fontSize: 16,
   },
   pageCurrent: {
     minWidth: 32, height: 32, borderRadius: 8, background: THEME.card,
@@ -125,7 +144,7 @@ function normalizeClient(c) {
 export default function Clients() {
   const navigate = useNavigate();
 
-  const [search, setSearch] = useState("");
+  const [search] = useState("");
   const [typeFilter, setTypeFilter] = useState("all"); // trial | purchase | support
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -172,13 +191,8 @@ export default function Clients() {
 
       <div style={styles.content}>
         <div style={styles.stage}>
-          {/* Topbar รีใช้ซ้ำสำหรับช่องค้นหา */}
-          <Topbar
-            placeholder="Search clients"
-            onSearchChange={setSearch}
-            defaultFilter="all"
-            onViewAllPath="/Noti"
-          />
+          {/* Topbar (แผง noti ใช้ของเดิมได้) */}
+          <Topbar defaultFilter="all" onViewAllPath="/Noti" />
 
           <div style={styles.title}>Clients</div>
 
@@ -201,6 +215,7 @@ export default function Clients() {
             </div>
 
             <div style={styles.rightGroup}>
+
               <button style={styles.btn} onClick={loadClients} disabled={loading}>
                 {loading ? "Loading..." : "Reload"}
               </button>
@@ -210,7 +225,7 @@ export default function Clients() {
 
           {/* error / empty states */}
           {err ? (
-            <div style={{ color: "#FCA5A5", marginBottom: 12, fontWeight: 700 }}>{err}</div>
+            <div style={{ color: THEME.warn, marginBottom: 12, fontWeight: 700 }}>{err}</div>
           ) : null}
 
           {/* table */}
@@ -224,7 +239,7 @@ export default function Clients() {
             </div>
 
             {filtered.length === 0 ? (
-              <div style={{ padding: 16, color: THEME.textMut }}>
+              <div style={{ padding: 16, color: THEME.textMut, background: "#FFFFFF" }}>
                 {loading ? "Loading..." : "No clients found"}
               </div>
             ) : (
