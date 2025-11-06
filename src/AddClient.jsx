@@ -136,6 +136,17 @@ const styles = {
     marginBottom: 12,
     border: `1px solid ${THEME.border}`,
   }),
+
+  // Success summary styles
+  successBox: {
+    background: "#ECFDF5",
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 12,
+    padding: 18,
+    marginTop: 12,
+  },
+  successTitle: { fontSize: 22, fontWeight: 900, color: THEME.success, marginBottom: 8 },
+  kvRow: { display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, marginBottom: 6 },
 };
 
 /* helper */
@@ -178,6 +189,9 @@ export default function AddClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [okMsg, setOkMsg] = useState("");
+
+  // ✅ ใหม่: เก็บผลลัพธ์ที่สร้างเสร็จ เพื่อแสดง Summary แทนการ navigate ทันที
+  const [createdClient, setCreatedClient] = useState(null);
 
   // prefill จาก Notifications (state.prefill)
   useEffect(() => {
@@ -330,11 +344,25 @@ export default function AddClient() {
 
     try {
       const created = await postJSON(`${API_BASE}/clients`, payload);
+
+      // ✅ เก็บไว้แสดงสรุปทันที แทนการ navigate
+      setCreatedClient({
+        id: created?.id ?? null,
+        code: created?.code ?? null,
+        email: created?.email ?? payload.profile.email,
+        name:
+          created?.name ??
+          `${payload.profile.firstName || ""} ${payload.profile.lastName || ""}`.trim(),
+        username: payload.credentials.username,
+        password: payload.credentials.password,
+        requestType: payload.requestType,
+      });
+
       setOkMsg("สร้าง Client สำเร็จ");
       window.scrollTo({ top: 0, behavior: "smooth" });
-      if (created?.id) {
-        navigate(`/client/${created.id}`); // ใช้เส้นทางเดิมของคุณ
-      }
+
+      // เดิม: navigate(`/client/${created.id}`)
+      // ตอนนี้ยังไม่ navigate เพื่อกันหน้าขาว — ให้ผู้ใช้กดเองเมื่อพร้อม
     } catch (e) {
       const msg = String(e?.message || e);
       if (/409/.test(msg) || /duplicate/i.test(msg))
@@ -346,6 +374,86 @@ export default function AddClient() {
       setSubmitting(false);
     }
   }
+
+  // ✅ รีเซ็ตแบบฟอร์มเพื่อสร้างใหม่
+  function resetForm() {
+    setCreatedClient(null);
+    setOkMsg("");
+    setError("");
+    setReqType("trial");
+    setForm({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      company: "",
+      industry: "",
+      country: "",
+      estimateUser: "",
+      message: "",
+      trialDays: "",
+      username: "",
+      password: "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ✅ UI: ถ้าสร้างเสร็จแล้ว แสดง Success Summary แทนฟอร์ม
+  const SuccessSummary = () => {
+    const cid = createdClient?.id;
+    return (
+      <div style={{ marginTop: 8 }}>
+        <div style={styles.successBox}>
+          <div style={styles.successTitle}>✅ Client Created Successfully</div>
+          <div style={styles.kvRow}>
+            <div style={{ fontWeight: 700, color: THEME.textFaint }}>Request Type</div>
+            <div>{createdClient?.requestType || "-"}</div>
+          </div>
+          <div style={styles.kvRow}>
+            <div style={{ fontWeight: 700, color: THEME.textFaint }}>Client ID</div>
+            <div>{cid ?? "(ยังไม่ได้รับค่า id จากเซิร์ฟเวอร์)"}</div>
+          </div>
+          {createdClient?.code && (
+            <div style={styles.kvRow}>
+              <div style={{ fontWeight: 700, color: THEME.textFaint }}>Code</div>
+              <div>{createdClient.code}</div>
+            </div>
+          )}
+          <div style={styles.kvRow}>
+            <div style={{ fontWeight: 700, color: THEME.textFaint }}>Name</div>
+            <div>{createdClient?.name || "-"}</div>
+          </div>
+          <div style={styles.kvRow}>
+            <div style={{ fontWeight: 700, color: THEME.textFaint }}>Email</div>
+            <div>{createdClient?.email || "-"}</div>
+          </div>
+          <div style={{ height: 8 }} />
+          <div style={{ fontWeight: 900, color: THEME.text }}>Credentials</div>
+         <div style={{ ...styles.kvRow, marginTop: 16 }}>
+            <div style={{ fontWeight: 700, color: THEME.textFaint }}>Username</div>
+            <div>
+              <code>{createdClient?.username}</code>
+            </div>
+          </div>
+          <div style={{ ...styles.kvRow, marginTop: 8 }}>
+            <div style={{ fontWeight: 700, color: THEME.textFaint }}>Password</div>
+            <div>
+              <code>{createdClient?.password}</code>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ ...styles.actions, marginTop: 16 }}>
+          <button style={styles.btnGhost} onClick={resetForm}>
+            สร้างใหม่อีกครั้ง
+          </button>
+          <button style={styles.btnGhost} onClick={() => navigate("/client")}>
+            กลับไป Clients
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={styles.root}>
@@ -364,172 +472,177 @@ export default function AddClient() {
           </div>
 
           {!!error && <div style={styles.banner("#FEF3C7")}>{error}</div>}
-          {!!okMsg && <div style={styles.banner("#ECFDF5")}>{okMsg}</div>}
+          {!!okMsg && !createdClient && <div style={styles.banner("#ECFDF5")}>{okMsg}</div>}
 
-          <div style={styles.card}>
-            <div style={styles.typeSelectWrap}>
-              <select
-                value={reqType}
-                onChange={(e) => setReqType(e.target.value)}
-                style={styles.typeSelect}
-              >
-                <option value="trial">Trial Request</option>
-                <option value="purchase">Purchase Request</option>
-                <option value="support">Support Request</option>
-              </select>
-              <FiChevronDown style={styles.caret} />
-            </div>
+          {/* ✅ ถ้าสร้างเสร็จแล้ว แสดง Summary */}
+          {createdClient ? (
+            <SuccessSummary />
+          ) : (
+            <div style={styles.card}>
+              <div style={styles.typeSelectWrap}>
+                <select
+                  value={reqType}
+                  onChange={(e) => setReqType(e.target.value)}
+                  style={styles.typeSelect}
+                >
+                  <option value="trial">Trial Request</option>
+                  <option value="purchase">Purchase Request</option>
+                  <option value="support">Support Request</option>
+                </select>
+                <FiChevronDown style={styles.caret} />
+              </div>
 
-            <div style={styles.row}>
-              <div>
-                <div style={styles.label}>First Name</div>
-                <input
-                  value={form.firstName}
-                  onChange={(e) => patch("firstName", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-              <div>
-                <div style={styles.label}>Last Name</div>
-                <input
-                  value={form.lastName}
-                  onChange={(e) => patch("lastName", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div>
-                <div style={styles.label}>Email</div>
-                <input
-                  value={form.email}
-                  onChange={(e) => patch("email", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-              <div>
-                <div style={styles.label}>Phone</div>
-                <input
-                  value={form.phone}
-                  onChange={(e) => patch("phone", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div>
-                <div style={styles.label}>Country</div>
-                <input
-                  value={form.country}
-                  onChange={(e) => patch("country", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-              <div>
-                <div style={styles.label}>Company</div>
-                <input
-                  value={form.company}
-                  onChange={(e) => patch("company", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div>
-                <div style={styles.label}>Industry</div>
-                <input
-                  value={form.industry}
-                  onChange={(e) => patch("industry", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-              <div>
-                <div style={styles.label}>Message</div>
-                <input
-                  value={form.message}
-                  onChange={(e) => patch("message", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-            </div>
-
-            <div style={styles.row}>
-              <div>
-                <div style={styles.label}>Estimate User</div>
-                <input
-                  value={form.estimateUser}
-                  onChange={(e) => patch("estimateUser", e.target.value)}
-                  style={styles.pillInput}
-                />
-              </div>
-              <div>
-                <div style={styles.label}>Trial</div>
-                <input
-                  value={form.trialDays}
-                  onChange={(e) => patch("trialDays", e.target.value)}
-                  style={styles.pillInput}
-                  placeholder="e.g. 15 days"
-                />
-              </div>
-            </div>
-
-            <div style={styles.credBox}>
-              <div className="row" style={styles.row}>
+              <div style={styles.row}>
                 <div>
-                  <div style={styles.label}>Username</div>
-                  <div style={styles.inline}>
-                    <input
-                      value={form.username}
-                      onChange={(e) => patch("username", e.target.value)}
-                      style={styles.pillInput}
-                    />
-                    <button
-                      style={{ ...styles.smallBtn, ...styles.smallBtnBlue }}
-                      onClick={randomUsername}
-                    >
-                      Random Username
-                    </button>
-                  </div>
+                  <div style={styles.label}>First Name</div>
+                  <input
+                    value={form.firstName}
+                    onChange={(e) => patch("firstName", e.target.value)}
+                    style={styles.pillInput}
+                  />
                 </div>
                 <div>
-                  <div style={styles.label}>Password</div>
-                  <div style={styles.inline}>
-                    <input
-                      value={form.password}
-                      onChange={(e) => patch("password", e.target.value)}
-                      style={styles.pillInput}
-                    />
-                    <button
-                      style={{ ...styles.smallBtn, ...styles.smallBtnGreen }}
-                      onClick={randomPassword}
-                    >
-                      Random Password
-                    </button>
+                  <div style={styles.label}>Last Name</div>
+                  <input
+                    value={form.lastName}
+                    onChange={(e) => patch("lastName", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div>
+                  <div style={styles.label}>Email</div>
+                  <input
+                    value={form.email}
+                    onChange={(e) => patch("email", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+                <div>
+                  <div style={styles.label}>Phone</div>
+                  <input
+                    value={form.phone}
+                    onChange={(e) => patch("phone", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div>
+                  <div style={styles.label}>Country</div>
+                  <input
+                    value={form.country}
+                    onChange={(e) => patch("country", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+                <div>
+                  <div style={styles.label}>Company</div>
+                  <input
+                    value={form.company}
+                    onChange={(e) => patch("company", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div>
+                  <div style={styles.label}>Industry</div>
+                  <input
+                    value={form.industry}
+                    onChange={(e) => patch("industry", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+                <div>
+                  <div style={styles.label}>Message</div>
+                  <input
+                    value={form.message}
+                    onChange={(e) => patch("message", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.row}>
+                <div>
+                  <div style={styles.label}>Estimate User</div>
+                  <input
+                    value={form.estimateUser}
+                    onChange={(e) => patch("estimateUser", e.target.value)}
+                    style={styles.pillInput}
+                  />
+                </div>
+                <div>
+                  <div style={styles.label}>Trial</div>
+                  <input
+                    value={form.trialDays}
+                    onChange={(e) => patch("trialDays", e.target.value)}
+                    style={styles.pillInput}
+                    placeholder="e.g. 15 days"
+                  />
+                </div>
+              </div>
+
+              <div style={styles.credBox}>
+                <div className="row" style={styles.row}>
+                  <div>
+                    <div style={styles.label}>Username</div>
+                    <div style={styles.inline}>
+                      <input
+                        value={form.username}
+                        onChange={(e) => patch("username", e.target.value)}
+                        style={styles.pillInput}
+                      />
+                      <button
+                        style={{ ...styles.smallBtn, ...styles.smallBtnBlue }}
+                        onClick={randomUsername}
+                      >
+                        Random Username
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={styles.label}>Password</div>
+                    <div style={styles.inline}>
+                      <input
+                        value={form.password}
+                        onChange={(e) => patch("password", e.target.value)}
+                        style={styles.pillInput}
+                      />
+                      <button
+                        style={{ ...styles.smallBtn, ...styles.smallBtnGreen }}
+                        onClick={randomPassword}
+                      >
+                        Random Password
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div style={styles.actions}>
-              <button
-                style={{ ...styles.btnPrimary, opacity: submitting ? 0.7 : 1 }}
-                onClick={onCreate}
-                disabled={submitting}
-              >
-                {submitting ? "Creating..." : "Create Client"}
-              </button>
-              <button
-                style={styles.btnGhost}
-                onClick={() => navigate(-1)}
-                disabled={submitting}
-              >
-                Cancel
-              </button>
+              <div style={styles.actions}>
+                <button
+                  style={{ ...styles.btnPrimary, opacity: submitting ? 0.7 : 1 }}
+                  onClick={onCreate}
+                  disabled={submitting}
+                >
+                  {submitting ? "Creating..." : "Create Client"}
+                </button>
+                <button
+                  style={styles.btnGhost}
+                  onClick={() => navigate(-1)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

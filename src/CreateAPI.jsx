@@ -4,6 +4,7 @@ import Sidebar from "./SideBar";
 import { FiChevronDown } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import Topbar from "./Topbar";
+import { createApiKey } from "../src/lib/api"; 
 
 /* THEME — Light */
 const THEME = {
@@ -22,14 +23,14 @@ const THEME = {
 const styles = {
   root: {
     display: "flex",
-    minHeight: "1024px",
+    minHeight: "100vh",
     background: THEME.pageBg,
     fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
   },
   content: { flex: 1, display: "flex", justifyContent: "center", padding: "18px 16px", position: "relative" },
   stage: {
     width: 1152,
-    minHeight: 988,
+    minHeight: 780,
     background: THEME.stageBg,
     borderRadius: 16,
     border: `1px solid ${THEME.border}`,
@@ -38,13 +39,11 @@ const styles = {
     boxShadow: "0 10px 28px rgba(0,0,0,.06)",
   },
 
-  /* Topbar */
   topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 },
 
   title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "14px 0 6px" },
   breadcrumb: { color: THEME.textFaint, fontWeight: 600, marginBottom: 20 },
 
-  /* card */
   card: {
     background: THEME.card,
     border: `1px solid ${THEME.border}`,
@@ -145,17 +144,23 @@ export default function CreateApiKey() {
   const navigate = useNavigate();
   const onSearchNoop = () => {};
 
-  /* form state */
-  const [name, setName] = useState("Partner A – Verify");
-  const [scope, setScope] = useState("issue_license");
-  const [status, setStatus] = useState("active"); // active | inactive | revoke
+  // form state
+  const [name, setName] = useState("");
+  const [scope, setScope] = useState("verify_license");
+  const [status, setStatus] = useState("active"); // active | inactive | revoked
+  const [expiresInDays, setExpiresInDays] = useState(0);
+
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
+
+  // modal state (แสดง plaintext key ครั้งเดียว)
+  const [created, setCreated] = useState(null); // { plaintext_key, mask, ... }
 
   const validate = () => {
     if (!name?.trim()) return "Please enter a name for this API key.";
     if (!SCOPE_OPTIONS.some((s) => s.value === scope)) return "Invalid scope.";
-    if (!["active", "inactive", "revoke"].includes(status)) return "Invalid status.";
+    if (!["active"].includes(status)) return "Invalid status.";
+    if (expiresInDays !== "" && Number.isNaN(Number(expiresInDays))) return "Expires in days must be a number.";
     return "";
   };
 
@@ -168,11 +173,15 @@ export default function CreateApiKey() {
     setErr("");
     setSubmitting(true);
     try {
-      const payload = { name: name.trim(), scope, status };
-      // mock submit
-      console.log("Create API Key (mock):", payload);
-      alert("Created! (mock)\n" + JSON.stringify(payload, null, 2));
-      navigate("/api-keys", { replace: true });
+      const payload = {
+        name: name.trim(),
+        scopes: [scope], // ถ้าต้องการหลายสิทธิ์ ค่อยเปลี่ยนเป็น multi-select แล้วส่งเป็น array หลายตัว
+        status,
+        expires_in_days: expiresInDays === "" ? null : Number(expiresInDays),
+      };
+      const res = await createApiKey(payload);
+      // res: { id, name, scopes, status, expires_at, plaintext_key, mask }
+      setCreated(res);
     } catch (e) {
       setErr(e?.message || "Failed to create API key.");
     } finally {
@@ -242,7 +251,7 @@ export default function CreateApiKey() {
               <div style={styles.label}>Status</div>
               <div style={styles.statusWrap}>
                 <label style={styles.statusItem}>
-                  <span style={styles.statusDot("#3B82F6")} />
+                  <span style={styles.statusDot("#78d650ff")} />
                   <input
                     type="radio"
                     name="status"
@@ -252,29 +261,22 @@ export default function CreateApiKey() {
                   />
                   Active
                 </label>
-                <label style={styles.statusItem}>
-                  <span style={styles.statusDot("#E5E7EB")} />
-                  <input
-                    type="radio"
-                    name="status"
-                    value="inactive"
-                    checked={status === "inactive"}
-                    onChange={(e) => setStatus(e.target.value)}
-                  />
-                  Inactive
-                </label>
-                <label style={styles.statusItem}>
-                  <span style={styles.statusDot("#EF4444")} />
-                  <input
-                    type="radio"
-                    name="status"
-                    value="revoke"
-                    checked={status === "revoke"}
-                    onChange={(e) => setStatus(e.target.value)}
-                  />
-                  Revoke
-                </label>
                 <div style={styles.hint}>Revoke will immediately disable the key.</div>
+              </div>
+            </div>
+
+            <div style={styles.row}>
+              <div style={styles.label}>Expires (days)</div>
+              <div>
+                <input
+                  type="number"                        // ✅ number input ป้องกัน NaN ง่ายขึ้น
+                  min="0"
+                  style={styles.input}
+                  placeholder="e.g. 180"
+                  value={expiresInDays}
+                  onChange={(e) => setExpiresInDays(e.target.value)}
+                />
+                <div style={styles.hint}>เว้นว่างถ้าไม่ต้องการวันหมดอายุ</div>
               </div>
             </div>
 
@@ -289,6 +291,46 @@ export default function CreateApiKey() {
           </div>
         </div>
       </div>
+
+      {/* Modal แสดง plaintext key ครั้งเดียว */}
+      {created && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,.5)",
+          display: "grid", placeItems: "center", zIndex: 9999
+        }}>
+          <div style={{ background: "#fff", padding: 20, borderRadius: 12, width: 560 }}>
+            <h3 style={{ marginTop: 0 }}>API Key created</h3>
+            <p><b>แสดงครั้งเดียวเท่านั้น!</b> กรุณาคัดลอกและเก็บอย่างปลอดภัย</p>
+
+            <div style={{
+              border: "1px solid #e5e7eb", borderRadius: 8, padding: 12,
+              background: "#f9fafb", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco",
+              wordBreak: "break-all"
+            }}>
+              {created.plaintext_key}
+            </div>
+
+            <div style={{ marginTop: 8, color: THEME.textFaint, fontSize: 12 }}>
+              Mask: {created.mask}
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+              <button
+                style={styles.btnGhost}
+                onClick={() => navigator.clipboard.writeText(created.plaintext_key)}
+              >
+                Copy
+              </button>
+              <button
+                style={styles.btnPrimary}
+                onClick={() => navigate("/api-keys", { replace: true })}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

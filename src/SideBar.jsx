@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  FiHome, FiUser, FiBox, FiBarChart2, FiUsers, FiSettings, FiLogOut
+  FiHome, FiUser, FiBox, FiBarChart2, FiUsers, FiSettings
 } from "react-icons/fi";
 
 const COLORS = {
@@ -97,11 +97,6 @@ const styles = {
     fontWeight: 500,
   }),
   spacer: { flex: 1 },
-  logout: {
-    margin: "10px 6px 4px",
-    paddingTop: 10,
-    borderTop: `1px solid ${COLORS.divider}`,
-  },
   logoImg: { width: 28, height: 28, objectFit: "contain", borderRadius: 6 },
 };
 
@@ -262,19 +257,6 @@ export default function Sidebar() {
       </div>
 
       <div style={styles.spacer} />
-
-      {/* Logout */}
-      <div style={styles.logout}>
-        <div
-          style={styles.itemOuter(false)}
-          onMouseEnter={(e) => (e.currentTarget.style.background = COLORS.sidebarBgHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          onClick={() => navigate("/logout")}
-        >
-          <span style={styles.itemIcon(false)}><FiLogOut /></span>
-          <span style={styles.itemLabel}>Log out</span>
-        </div>
-      </div>
     </aside>
   );
 }

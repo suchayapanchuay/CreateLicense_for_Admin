@@ -1,10 +1,11 @@
 // src/pages/Logs.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "./SideBar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import Topbar from "./Topbar";
+import { listActivityLogs } from "../src/lib/api"; 
 
 /* THEME — Light (ให้กลมกับหน้าอื่น) */
 const THEME = {
@@ -21,19 +22,6 @@ const THEME = {
   dangerBg: "#FEE2E2",
   dangerText: "#991B1B",
 };
-
-const activity = [
-  { id: "1", user: "Admin101", action: "Login", timestamp: "2025-07-10 12:00" },
-  { id: "2", user: "Admin102", action: "Create License", timestamp: "2023-07-10 11:30" },
-  { id: "3", user: "Admin101", action: "Revoke License", timestamp: "2024-05-15 09:00" },
-  { id: "4", user: "Admin103", action: "Login", timestamp: "2025-07-11 08:45" },
-  { id: "5", user: "Admin104", action: "Create License", timestamp: "2025-06-01 14:00" },
-  { id: "6", user: "Admin105", action: "Update Settings", timestamp: "2025-07-25 16:20" },
-  { id: "7", user: "Admin106", action: "Add Client", timestamp: "2025-07-01 10:15" },
-  { id: "8", user: "Admin102", action: "Delete Client", timestamp: "2025-07-28 13:00" },
-  { id: "9", user: "Admin101", action: "Login", timestamp: "2025-07-29 08:00" },
-  { id: "10", user: "Admin107", action: "Deactivate API Key", timestamp: "2025-07-20 11:55" },
-];
 
 const styles = {
   root: {
@@ -66,7 +54,7 @@ const styles = {
     alignItems: "center",
   },
   dropdown: {
-    width: 160,
+    width: 180,
     padding: "8px 10px",
     borderRadius: 10,
     border: `1px solid ${THEME.border}`,
@@ -110,7 +98,7 @@ const styles = {
   },
   thRow: {
     display: "grid",
-    gridTemplateColumns: "2fr 1.6fr 1.6fr",
+    gridTemplateColumns: "2fr 1.2fr 1.6fr",
     background: "#FAFBFF",
     borderBottom: `1px solid ${THEME.border}`,
   },
@@ -122,7 +110,7 @@ const styles = {
   },
   row: {
     display: "grid",
-    gridTemplateColumns: "2fr 1.6fr 1.6fr",
+    gridTemplateColumns: "2fr 1.2fr 1.6fr",
     alignItems: "center",
     borderTop: `1px solid ${THEME.border}`,
     background: "#FFFFFF",
@@ -147,42 +135,61 @@ const CustomDatePickerInput = React.forwardRef(({ value, onClick }, ref) => (
 export default function Logs() {
   const onSearchNoop = () => {};
 
+  // filters = { user: actor, action, date(start-from) }
   const [filters, setFilters] = useState({ user: "", action: "", date: null });
-  const [appliedFilters, setAppliedFilters] = useState(filters);
 
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // โหลดข้อมูลทุกครั้งที่ filter เปลี่ยน (ยิงไปกรองที่ backend)
   useEffect(() => {
-    setAppliedFilters(filters);
-  }, [filters]);
+    (async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (filters.user) params.user = filters.user;
+        if (filters.action) params.action = filters.action;
+        if (filters.date) params.since = moment(filters.date).startOf("day").toISOString(); // ISO
 
-  const filteredActivities = activity.filter((item) => {
-    const userMatch = !appliedFilters.user || item.user === appliedFilters.user;
-    const actionMatch = !appliedFilters.action || item.action === appliedFilters.action;
-    let dateMatch = true;
-    if (appliedFilters.date) {
-      const itemDate = moment(item.timestamp, "YYYY-MM-DD HH:mm");
-      const selectedDate = moment(appliedFilters.date);
-      // แสดงรายการตั้งแต่วันที่เลือก (>= วันนั้น)
-      dateMatch = itemDate.isSameOrAfter(selectedDate, "day");
-    }
-    return userMatch && actionMatch && dateMatch;
-  });
+        const data = await listActivityLogs(params); // [{id, actor, action, message, created_at, ...}]
+        setLogs(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error(e);
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [filters.user, filters.action, filters.date]);
+
+  // ทำรายการ users/actions จากข้อมูลล่าสุดที่ดึงมา
+  const uniqueUsers = useMemo(
+    () => ["", ...Array.from(new Set(logs.map((l) => l.actor).filter(Boolean)))],
+    [logs]
+  );
+  const uniqueActions = useMemo(
+    () => ["", ...Array.from(new Set(logs.map((l) => l.action).filter(Boolean)))],
+    [logs]
+  );
 
   const exportCSV = (data) => {
-    const header = ["Timestamp", "User", "Action"];
-    const rows = data.map((item) => [item.timestamp, item.user, item.action]);
+    const header = ["Timestamp", "User", "Action", "Message"];
+    const rows = data.map((i) => [
+      i.created_at ? moment(i.created_at).format("YYYY-MM-DD HH:mm") : "",
+      i.actor ?? "",
+      i.action ?? "",
+      (i.message ?? "").replace(/[\r\n,]+/g, " "), // กัน CSV พัง
+    ]);
     const csvContent =
-      "data:text/csv;charset=utf-8," + [header, ...rows].map((e) => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
+      "data:text/csv;charset=utf-8," +
+      [header, ...rows].map((e) => e.join(",")).join("\n");
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "activity_logs.csv");
+    link.href = encodeURI(csvContent);
+    link.download = "activity_logs.csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
-
-  const uniqueUsers = ["", ...new Set(activity.map((a) => a.user))];
-  const uniqueActions = ["", ...new Set(activity.map((a) => a.action))];
 
   return (
     <div style={styles.root}>
@@ -241,7 +248,7 @@ export default function Logs() {
               dateFormat="yyyy-MM-dd"
             />
 
-            <button style={styles.exportButton} onClick={() => exportCSV(filteredActivities)}>
+            <button style={styles.exportButton} onClick={() => exportCSV(logs)}>
               Export CSV
             </button>
           </div>
@@ -254,15 +261,27 @@ export default function Logs() {
               <div style={styles.th}>Action</div>
             </div>
 
-            {filteredActivities.map((item) => (
-              <div key={item.id} style={styles.row}>
-                <div style={styles.td}>{item.timestamp}</div>
-                <div style={styles.td}>{item.user}</div>
-                <div style={styles.td}>{item.action}</div>
-              </div>
-            ))}
+            {loading && (
+              <div style={{ padding: 16, color: THEME.textFaint }}>Loading…</div>
+            )}
 
-            {!filteredActivities.length && (
+            {!loading &&
+              logs.map((item) => (
+                <div key={item.id} style={styles.row}>
+                  <div style={styles.td}>
+                    {item.created_at
+                      ? moment(item.created_at).format("YYYY-MM-DD HH:mm")
+                      : "-"}
+                  </div>
+                  <div style={styles.td}>{item.actor || "-"}</div>
+                  <div style={styles.td}>
+                    {item.action || "-"}
+                    {item.message ? ` – ${item.message}` : ""}
+                  </div>
+                </div>
+              ))}
+
+            {!loading && !logs.length && (
               <div style={{ padding: 16, color: THEME.textFaint }}>No logs found</div>
             )}
           </div>
