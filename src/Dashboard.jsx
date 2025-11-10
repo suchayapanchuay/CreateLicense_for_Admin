@@ -42,7 +42,7 @@ const styles = {
   btnSecondary: { width: "100%", padding: "10px 12px", borderRadius: 8, fontWeight: 700, border: `1px solid ${COLORS.accent}`, background: "transparent", color: COLORS.accent, cursor: "pointer" },
   legendDot: (c) => ({ width: 10, height: 10, borderRadius: 10, background: c, display: "inline-block", marginRight: 8 }),
   progressWrap: { height: 10, background: "rgba(0,0,0,0.05)", borderRadius: 6, overflow: "hidden" },
-  progressInner: (pct) => ({ width: `${pct}%`, height: "100%", background: COLORS.accent }),
+  progressInner: (pct) => ({ width: `${pct}%`, height: "100%", background: COLORS.accent, transition: "width .3s ease" }),
   muted: { color: COLORS.textMut, fontSize: 13 }
 };
 
@@ -57,7 +57,7 @@ export default function Dashboard() {
   });
   const [usage, setUsage] = useState([]);                 // [{day, usage}]
   const [expiryBuckets, setExpiryBuckets] = useState([]);  // [{name,value}]
-  const [expiringSoon, setExpiringSoon] = useState([]);    // [{client, days, pct}]
+  const [expiringSoon, setExpiringSoon] = useState([]);    // [{username/user_name/user{...}/client, days, pct}]
   const [systemHealth, setSystemHealth] = useState([]);    // [{label,status}]
 
   useEffect(() => {
@@ -87,19 +87,21 @@ export default function Dashboard() {
     return () => { alive = false; };
   }, []);
 
-  // Map เป็นรูปแบบกราฟที่มีอยู่เดิม
+  // Normalize usage for line chart
   const usageData = useMemo(() => {
     if (!usage?.length) return [];
-    // ถ้าวันไม่เรียง ค่อยเรียง
     return [...usage].sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
   }, [usage]);
 
+  // Normalize donut data
   const donutData = useMemo(() => {
-    if (!expiryBuckets?.length) return [
-      { name: "0–7 days", value: 0 },
-      { name: "8–30 days", value: 0 },
-      { name: "> 30 days", value: 0 },
-    ];
+    if (!expiryBuckets?.length) {
+      return [
+        { name: "0–7 days", value: 0 },
+        { name: "8–30 days", value: 0 },
+        { name: "> 30 days", value: 0 },
+      ];
+    }
     return expiryBuckets;
   }, [expiryBuckets]);
 
@@ -233,14 +235,34 @@ export default function Dashboard() {
               {/* Expiring Soon */}
               <div style={styles.sideCard}>
                 <div style={{ fontWeight: 800, marginBottom: 12, color: COLORS.text }}>Expiring Soon</div>
-                {(expiringSoon?.length ? expiringSoon : []).map((e) => (
-                  <div key={`${e.client}-${e.days}`} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", color: COLORS.textMut, fontSize: 13 }}>
-                      <span>{e.client}</span><span>{e.days} {e.days === 1 ? "day" : "days"}</span>
+                {(expiringSoon?.length ? expiringSoon : []).map((e, i) => {
+                  // ----- ชื่อผู้ใช้ (รองรับหลายฟอร์แมต) -----
+                  const displayName =
+                    e?.user_name ||                 // snake_case
+                    e?.username ||                  // username
+                    e?.user?.full_name ||           // object user
+                    e?.user?.name ||
+                    e?.client_name ||               // ชื่อ client เต็ม
+                    e?.client ||                    // ฟิลด์เดิม
+                    `User #${i + 1}`;               // fallback
+
+                  // ----- วันคงเหลือ / เปอร์เซ็นต์ bar -----
+                  const daysLeft = Number.isFinite(e?.days) ? e.days
+                                  : (Number.isFinite(e?.remaining_days) ? e.remaining_days : 0);
+                  let pct = Number.isFinite(e?.pct) ? e.pct
+                          : (Number.isFinite(e?.percentage) ? e.percentage : 0);
+                  pct = Math.max(0, Math.min(100, pct));
+
+                  return (
+                    <div key={`${displayName}-${daysLeft}-${i}`} style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", color: COLORS.textMut, fontSize: 13 }}>
+                        <span style={{ color: COLORS.text, fontWeight: 700 }}>{displayName}</span>
+                        <span>{daysLeft} {daysLeft === 1 ? "day" : "days"}</span>
+                      </div>
+                      <div style={styles.progressWrap}><div style={styles.progressInner(pct)} /></div>
                     </div>
-                    <div style={styles.progressWrap}><div style={styles.progressInner(e.pct ?? 0)} /></div>
-                  </div>
-                ))}
+                  );
+                })}
                 {!expiringSoon?.length && <div style={styles.muted}>No upcoming expiries.</div>}
               </div>
 
