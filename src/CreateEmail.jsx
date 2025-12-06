@@ -23,7 +23,7 @@ const THEME = {
   dangerBg: "#FEE2E2",
 };
 
-/* STYLES (ยึดคีย์เดียวกับ EditEmail.jsx เพื่อความสม่ำเสมอ) */
+/* STYLES */
 const styles = {
   root: {
     display: "flex",
@@ -31,9 +31,15 @@ const styles = {
     background: THEME.pageBg,
     fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial",
   },
-  content: { flex: 1, display: "flex", justifyContent: "center", padding: 24 },
+  content: {
+    flex: 1,
+    display: "flex",
+    justifyContent: "center",
+    padding: "24px 32px",
+  },
   stage: {
-    width: 1152,
+    width: "100%",
+    maxWidth: 1180,
     background: THEME.stageBg,
     borderRadius: 16,
     border: `1px solid ${THEME.border}`,
@@ -41,11 +47,36 @@ const styles = {
     position: "relative",
     boxShadow: "0 10px 28px rgba(0,0,0,.06)",
   },
-  topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 },
-  title: { fontSize: 40, fontWeight: 900, color: THEME.text, margin: "20px 0 6px" },
-  breadcrumb: { color: THEME.textFaint, fontWeight: 600, marginBottom: 18 },
 
-  formContainer: { display: "flex", gap: 24, marginTop: 12, alignItems: "flex-start" },
+  topbarRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 12 },
+
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 16,
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  titleBlock: { display: "flex", flexDirection: "column", gap: 4 },
+  title: { fontSize: 32, fontWeight: 900, color: THEME.text },
+  subtitle: { fontSize: 14, color: THEME.textFaint, maxWidth: 520 },
+
+  breadcrumb: {
+    color: THEME.textFaint,
+    fontWeight: 600,
+    marginTop: 4,
+    marginBottom: 18,
+    fontSize: 13,
+  },
+
+  // layout
+  formContainer: {
+    display: "flex",
+    gap: 24,
+    marginTop: 12,
+    alignItems: "stretch",
+  },
 
   formSection: { flex: 1, display: "flex", flexDirection: "column", gap: 16 },
   formCard: {
@@ -56,57 +87,134 @@ const styles = {
     boxShadow: "0 6px 16px rgba(0,0,0,.05)",
   },
 
-  label: { color: THEME.textMut, fontSize: 13, fontWeight: 800, marginBottom: 6 },
-  input: {
-    width: "90%",
-    background: THEME.card,
-    color: THEME.text,
-    border: `1px solid ${THEME.border}`,
-    borderRadius: 10,
-    padding: "10px 12px",
-    outline: "none",
-    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 800,
+    textTransform: "uppercase",
+    letterSpacing: 0.04,
+    color: THEME.textFaint,
+    marginBottom: 4,
   },
-  textarea: {
-    width: "95%",
-    background: THEME.card,
-    color: THEME.text,
-    border: `1px solid ${THEME.border}`,
-    borderRadius: 10,
-    padding: "10px 12px",
-    outline: "none",
-    minHeight: 180,
-    resize: "vertical",
-    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+  sectionDesc: {
+    fontSize: 13,
+    color: THEME.textFaint,
+    marginBottom: 10,
   },
 
-  radioGroup: { display: "flex", gap: 18, alignItems: "center", marginTop: 2, color: THEME.text },
-  radioLabel: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: THEME.text },
+  labelRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  label: { color: THEME.textMut, fontSize: 13, fontWeight: 800 },
+  labelRequired: { color: "#DC2626", fontSize: 12, fontWeight: 800 },
+
+  input: {
+    width: "100%",
+    background: THEME.card,
+    color: THEME.text,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 10,
+    padding: "10px 12px",
+    outline: "none",
+    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+    fontSize: 14,
+  },
+  textarea: {
+    width: "100%",
+    background: THEME.card,
+    color: THEME.text,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 10,
+    padding: "10px 12px",
+    outline: "none",
+    minHeight: 200,
+    resize: "vertical",
+    boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+    fontSize: 14,
+  },
+
+  radioGroup: {
+    display: "flex",
+    gap: 18,
+    alignItems: "center",
+    marginTop: 2,
+    color: THEME.text,
+    flexWrap: "wrap",
+  },
+  radioLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    cursor: "pointer",
+    color: THEME.text,
+    fontSize: 13,
+  },
 
   smallMuted: { color: THEME.textFaint, fontSize: 12, marginTop: 6 },
 
   // preview
   previewSection: {
-    flex: 1,
+    flexBasis: "40%",
+    maxWidth: 420,
     background: THEME.card,
     border: `1px solid ${THEME.border}`,
     borderRadius: 12,
-    padding: 24,
+    padding: 18,
     boxShadow: "0 6px 16px rgba(0,0,0,.05)",
+    display: "flex",
+    flexDirection: "column",
   },
-  previewTitle: { color: THEME.text, fontSize: 18, fontWeight: 900, marginBottom: 12 },
-  previewBody: { color: THEME.text, whiteSpace: "pre-wrap" },
+  previewHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  previewTitle: { color: THEME.text, fontSize: 14, fontWeight: 800 },
+  previewBadge: {
+    fontSize: 11,
+    padding: "4px 8px",
+    borderRadius: 999,
+    background: "#EEF2FF",
+    color: THEME.accent,
+    fontWeight: 700,
+  },
+  previewSubject: {
+    color: THEME.text,
+    fontSize: 15,
+    fontWeight: 700,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  previewBodyWrapper: {
+    borderTop: `1px solid ${THEME.border}`,
+    paddingTop: 10,
+    marginTop: 4,
+    flex: 1,
+    overflow: "auto",
+  },
+  previewBody: { color: THEME.text, whiteSpace: "pre-wrap", fontSize: 13.5, lineHeight: 1.55 },
 
   // buttons
+  btnRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 20,
+  },
   btnPrimary: {
     borderRadius: 10,
-    padding: "10px 14px",
+    padding: "10px 16px",
     fontWeight: 900,
     cursor: "pointer",
     border: "none",
     background: THEME.accent,
     color: "#fff",
     boxShadow: "0 6px 14px rgba(37,99,235,.25)",
+    fontSize: 14,
   },
   btnGhost: {
     borderRadius: 10,
@@ -117,6 +225,7 @@ const styles = {
     background: THEME.card,
     color: THEME.text,
     boxShadow: "0 4px 10px rgba(0,0,0,.04)",
+    fontSize: 14,
   },
 
   // util
@@ -125,6 +234,13 @@ const styles = {
     borderRadius: 12,
     padding: 10,
     background: "#FAFBFF",
+    marginBottom: 12,
+  },
+  dashedTitle: {
+    fontSize: 13,
+    fontWeight: 800,
+    color: THEME.text,
+    marginBottom: 4,
   },
   err: {
     color: THEME.dangerText,
@@ -134,8 +250,8 @@ const styles = {
     border: `1px solid ${THEME.border}`,
     padding: "8px 10px",
     borderRadius: 8,
+    fontSize: 13,
   },
-  hr: { border: "none", height: 1, background: "rgba(0,0,0,0.06)", margin: "14px 0" },
 
   variableTags: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 },
   tag: {
@@ -161,7 +277,7 @@ export default function CreateNewTemplate() {
   const [err, setErr] = useState("");
   const bodyRef = useRef(null);
 
-  // ค่า preview เริ่มต้นให้เหมือนกับฝั่ง Edit
+  // ค่า preview เริ่มต้น
   const previewVars = useMemo(
     () => ({
       client: {
@@ -196,7 +312,9 @@ export default function CreateNewTemplate() {
             meta: Array.isArray(data?.meta) ? data.meta : [],
           });
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     })();
     return () => ctrl.abort();
   }, []);
@@ -213,7 +331,9 @@ export default function CreateNewTemplate() {
           body: JSON.stringify({ subject: form.subject, body: form.body, variables: previewVars }),
         });
         if (r.ok) setPreview(await r.json());
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }, 250);
     return () => {
       clearTimeout(t);
@@ -256,7 +376,7 @@ export default function CreateNewTemplate() {
     setErr("");
     try {
       if (!form.slug || !form.name || !form.subject) {
-        throw new Error("Please fill slug, name, and subject.");
+        throw new Error("Please fill in Template name, Slug, and Subject.");
       }
       const r = await fetch(`${API_BASE}/email-templates`, {
         method: "POST",
@@ -294,7 +414,7 @@ export default function CreateNewTemplate() {
           <div style={styles.topbarRow}>
             <div style={{ flex: 1 }}>
               <Topbar
-                placeholder="Search templates"
+                placeholder="Search notification & templates"
                 onSearchChange={() => {}}
                 defaultFilter="all"
                 onViewAllPath="/Noti"
@@ -302,18 +422,24 @@ export default function CreateNewTemplate() {
             </div>
           </div>
 
-          {/* Heading + Breadcrumb */}
-          <div style={styles.title}>Setting / Logs</div>
+          {/* Header */}
+          <div style={styles.headerRow}>
+            <div style={styles.titleBlock}>
+              <div style={styles.title}>Create email template</div>
+            </div>
+          </div>
+
+          {/* Breadcrumb */}
           <div style={styles.breadcrumb}>
-            <span>Setting / Logs</span>
+            <span style={{ cursor: "default" }}>Settings</span>
             &nbsp;&gt;&nbsp;
             <span
               style={{ cursor: "pointer", color: THEME.accent }}
               onClick={() => navigate("/email-template")}
             >
-              Email Template
+              Email templates
             </span>
-            &nbsp;&gt;&nbsp;<span style={{ color: THEME.accent }}>Create New Template</span>
+            &nbsp;&gt;&nbsp;<span style={{ color: THEME.accent }}>Create new template</span>
           </div>
 
           <div style={styles.formContainer}>
@@ -322,35 +448,71 @@ export default function CreateNewTemplate() {
               <div style={styles.formCard}>
                 {err && <div style={styles.err}>{err}</div>}
 
-                <div style={styles.label}>Slug</div>
-                <input
-                  name="slug"
-                  value={form.slug}
-                  onChange={handleChange}
-                  placeholder="welcome"
-                  style={styles.input}
-                />
+                <div style={styles.sectionTitle}>1. Template details</div>
 
-                <div style={styles.label}>Name</div>
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Welcome / Credentials + License"
-                  style={styles.input}
-                />
+                <div style={styles.dashed}>
+                  <div style={styles.dashedTitle}>Automatic email to customers</div>
+                </div>
 
-                <div style={styles.label}>Subject</div>
-                <input
-                  name="subject"
-                  value={form.subject}
-                  onChange={handleChange}
-                  placeholder="[{{meta.app_name}}] Your account & license"
-                  style={styles.input}
-                />
+                {/* Row: Template name + Slug */}
+                <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={styles.labelRow}>
+                      <div style={styles.label}>Template name</div>
+                      <span style={styles.labelRequired}>*</span>
+                    </div>
+                    <input
+                      name="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      placeholder="Welcome / Credentials + License"
+                      style={styles.input}
+                    />
+                    <div style={styles.smallMuted}>
+                      <span style={{ fontStyle: "italic" }}>"Welcome email"</span>
+                    </div>
+                  </div>
 
-                <div style={{ marginTop: 10 }}>
-                  <div style={styles.label}>Status</div>
+                  <div style={{ width: "38%" }}>
+                    <div style={styles.labelRow}>
+                      <div style={styles.label}>Slug</div>
+                      <span style={styles.labelRequired}>*</span>
+                    </div>
+                    <input
+                      name="slug"
+                      value={form.slug}
+                      onChange={handleChange}
+                      placeholder="welcome"
+                      style={styles.input}
+                    />
+
+                  </div>
+                </div>
+
+                {/* Subject */}
+                <div style={{ marginTop: 16 }}>
+                  <div style={styles.labelRow}>
+                    <div style={styles.label}>Subject</div>
+                    <span style={styles.labelRequired}>*</span>
+                  </div>
+                  <input
+                    name="subject"
+                    value={form.subject}
+                    onChange={handleChange}
+                    placeholder="[{{meta.app_name}}] Your account & license"
+                    style={styles.input}
+                  />
+                  <div style={styles.smallMuted}>
+                    หัวข้ออีเมลที่ลูกค้าจะเห็นในกล่องจดหมาย รองรับตัวแปร เช่น{" "}
+                    {"{{meta.app_name}}"}
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div style={{ marginTop: 18 }}>
+                  <div style={styles.labelRow}>
+                    <div style={styles.label}>Status</div>
+                  </div>
                   <div style={styles.radioGroup}>
                     {["Active", "Draft", "Disabled"].map((s) => (
                       <label key={s} style={styles.radioLabel}>
@@ -367,9 +529,10 @@ export default function CreateNewTemplate() {
                   </div>
                 </div>
 
+                {/* HTML toggle */}
                 <div
                   style={{
-                    marginTop: 10,
+                    marginTop: 18,
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
@@ -383,11 +546,18 @@ export default function CreateNewTemplate() {
                     checked={form.is_html}
                     onChange={handleChange}
                   />
-                  <label htmlFor="is_html">Send as HTML</label>
+                  <label htmlFor="is_html" style={{ fontSize: 13 }}>
+                    Send as HTML
+                  </label>
                 </div>
 
-                <div style={{ marginTop: 12 }}>
-                  <div style={styles.label}>Body</div>
+                {/* Body */}
+                <div style={{ marginTop: 20 }}>
+                  <div style={styles.sectionTitle}>2. Email content</div>
+
+                  <div style={styles.labelRow}>
+                    <div style={styles.label}>Body</div>
+                  </div>
                   <textarea
                     ref={bodyRef}
                     name="body"
@@ -399,8 +569,10 @@ export default function CreateNewTemplate() {
                 </div>
 
                 {/* Variables */}
-                <div style={{ marginTop: 8 }}>
-                  <div style={styles.label}>Variables</div>
+                <div style={{ marginTop: 16 }}>
+                  <div style={styles.labelRow}>
+                    <div style={styles.label}>Variables</div>
+                  </div>
                   <div style={styles.variableTags}>
                     {["client", "license", "meta"].flatMap((ns) =>
                       (varsList[ns] || []).map((key) => (
@@ -418,15 +590,7 @@ export default function CreateNewTemplate() {
                 </div>
 
                 {/* Actions */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: 10,
-                    marginTop: 18,
-                  }}
-                >
+                <div style={styles.btnRow}>
                   <button
                     style={styles.btnGhost}
                     onClick={() => navigate("/email-template")}
@@ -434,12 +598,8 @@ export default function CreateNewTemplate() {
                   >
                     Cancel
                   </button>
-                  <button
-                    style={styles.btnPrimary}
-                    disabled={saving}
-                    onClick={handleSave}
-                  >
-                    {saving ? "Saving..." : "Save Template"}
+                  <button style={styles.btnPrimary} disabled={saving} onClick={handleSave}>
+                    {saving ? "Saving..." : "Save template"}
                   </button>
                 </div>
               </div>
@@ -447,15 +607,20 @@ export default function CreateNewTemplate() {
 
             {/* Right: Preview */}
             <div style={styles.previewSection}>
-              <div style={styles.previewTitle}>
+              <div style={styles.previewHeader}>
+                <div style={styles.previewTitle}>Live preview</div>
+                <div style={styles.previewBadge}>Auto-updated</div>
+              </div>
+
+              <div style={styles.previewSubject}>
                 {preview.subject || "(preview subject)"}
               </div>
-              <div style={{ borderTop: `1px solid ${THEME.border}`, paddingTop: 12 }}>
+
+              <div style={styles.previewBodyWrapper}>
                 <PreviewBody />
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
