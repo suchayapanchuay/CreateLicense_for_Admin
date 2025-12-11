@@ -340,13 +340,21 @@ const styles = {
   hr: { border: "none", height: 1, background: "rgba(0,0,0,0.06)", margin: "14px 0" },
 };
 
-const INIT = { slug: "", name: "", subject: "", body: "", status: "Active", is_html: true };
+const INIT = {
+  slug: "",
+  name: "",
+  subject: "",
+  body: "",
+  status: "Active",
+  is_html: true,
+};
+
 
 // helper สำหรับ client dropdown
 function normalizeClientOption(c) {
   const fn = c.firstName ?? c.first_name ?? "";
   const ln = c.lastName ?? c.last_name ?? "";
-  const name = (fn || ln) ? `${fn} ${ln}`.trim() : (c.name || "-");
+  const name = fn || ln ? `${fn} ${ln}`.trim() : c.name || "-";
   return {
     id: String(c.id),
     name,
@@ -376,7 +384,7 @@ export default function EditEmail() {
   const [loadedClient, setLoadedClient] = useState(null);
   const [loadedLicense, setLoadedLicense] = useState(null);
 
-  // test email (แก้เป็น dropdown client)
+  // test email (client dropdown)
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsErr, setClientsErr] = useState("");
@@ -384,7 +392,7 @@ export default function EditEmail() {
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState("");
 
-  const previewVars = useMemo(
+  const previewVarsMock = useMemo(
     () => ({
       client: {
         first_name: "Suchaya",
@@ -412,7 +420,9 @@ export default function EditEmail() {
       try {
         setErr("");
         setLoading(true);
-        const r = await fetch(`${API_BASE}/email-templates/${templateId}`, { signal: ctrl.signal });
+        const r = await fetch(`${API_BASE}/email-templates/${templateId}`, {
+          signal: ctrl.signal,
+        });
         if (!r.ok) throw new Error(await r.text());
         const data = await r.json();
         setForm({
@@ -461,38 +471,49 @@ export default function EditEmail() {
     return () => ctrl.abort();
   }, []);
 
-  // build variables for preview
-  const buildPreviewVars = useCallback(() => {
-    if (loadedClient || loadedLicense) {
-      const client = loadedClient || {};
-      const license = loadedLicense || {};
-      return {
-        client: {
-          first_name: client.first_name || client.firstName || client.name || "",
-          last_name: client.last_name || client.lastName || "",
-          email: client.email || "",
-          company: client.company || client.org || "",
-          country: client.country || "",
-          username: client.username || client.user_name || client.email || "",
-          plain_password: includePlainPassword
-            ? client.plain_password || client.password_plain || "(not provided)"
-            : "(hidden)",
-        },
-        license: {
-          license_key: license.license_key || license.key || license.licenseKey || "",
-          term: license.term || license.duration || "",
-          product_sku: license.product_sku || license.productSku || "",
-          expires_at: license.expires_at || license.expiresAt || license.expires || "",
-          issued_at: license.issued_at || license.issuedAt || license.issued || "",
-          max_activations: license.max_activations || license.maxActivations || 0,
-          activations_used: license.activations_used || license.activationsUsed || 0,
-          status: license.status || "",
-        },
-        meta: { app_name: "SmartAudit", portal_url: window.location.origin },
-      };
-    }
-    return previewVars;
-  }, [loadedClient, loadedLicense, includePlainPassword, previewVars]);
+  // build variables สำหรับ preview + send-test จากข้อมูลจริง ถ้ามี
+  const buildPreviewVars = useCallback(
+    (clientOverride = null, licenseOverride = null) => {
+      const client = clientOverride || loadedClient;
+      const license = licenseOverride || loadedLicense;
+
+      if (client || license) {
+        const c = client || {};
+        const l = license || {};
+
+        return {
+          client: {
+            first_name: c.first_name || c.firstName || c.name || "",
+            last_name: c.last_name || c.lastName || "",
+            email: c.email || "",
+            company: c.company || c.org || "",
+            country: c.country || "",
+            username: c.username || c.user_name || c.email || "",
+            plain_password: includePlainPassword
+              ? c.plain_password ||
+                c.password_plain ||
+                "(not provided)"
+              : "(hidden)",
+          },
+          license: {
+            license_key: l.license_key || l.key || l.licenseKey || "",
+            term: l.term || l.duration || "",
+            product_sku: l.product_sku || l.productSku || "",
+            expires_at: l.expires_at || l.expiresAt || l.expires || "",
+            issued_at: l.issued_at || l.issuedAt || l.issued || "",
+            max_activations: l.max_activations || l.maxActivations || 0,
+            activations_used: l.activations_used || l.activationsUsed || 0,
+            status: l.status || "",
+          },
+          meta: { app_name: "SmartAudit", portal_url: window.location.origin },
+        };
+      }
+
+      // fallback mock
+      return previewVarsMock;
+    },
+    [loadedClient, loadedLicense, includePlainPassword, previewVarsMock]
+  );
 
   // live preview (debounce)
   useEffect(() => {
@@ -504,7 +525,11 @@ export default function EditEmail() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: ctrl.signal,
-          body: JSON.stringify({ subject: form.subject, body: form.body, variables: vars }),
+          body: JSON.stringify({
+            subject: form.subject,
+            body: form.body,
+            variables: vars,
+          }),
         });
         if (r.ok) setPreview(await r.json());
       } catch {
@@ -549,12 +574,19 @@ export default function EditEmail() {
 
   const handleDelete = async () => {
     if (!templateId) return;
-    if (!window.confirm(`ต้องการลบเทมเพลต "${form.name || form.slug}" ใช่หรือไม่?`)) return;
+    if (
+      !window.confirm(
+        `ต้องการลบเทมเพลต "${form.name || form.slug}" ใช่หรือไม่?`
+      )
+    )
+      return;
 
     setDeleting(true);
     setErr("");
     try {
-      const r = await fetch(`${API_BASE}/email-templates/${templateId}`, { method: "DELETE" });
+      const r = await fetch(`${API_BASE}/email-templates/${templateId}`, {
+        method: "DELETE",
+      });
       if (!r.ok && r.status !== 204) {
         let msg = "";
         try {
@@ -571,7 +603,7 @@ export default function EditEmail() {
     }
   };
 
-  // load client & latest license (Advanced)
+  // load client & latest license (Advanced manual preview)
   const handleLoadClient = async () => {
     if (!clientQuery) {
       setClientError("กรุณากรอก Client ID หรืออีเมล");
@@ -590,9 +622,12 @@ export default function EditEmail() {
 
       // by ID
       try {
-        const r1 = await fetch(`${API_BASE}/clients/${encodeURIComponent(clientQuery)}`, {
-          headers,
-        });
+        const r1 = await fetch(
+          `${API_BASE}/clients/${encodeURIComponent(clientQuery)}`,
+          {
+            headers,
+          }
+        );
         if (r1.ok) clientData = await r1.json();
       } catch {}
 
@@ -646,7 +681,9 @@ export default function EditEmail() {
       if (!licenseData) {
         try {
           const rL2 = await fetch(
-            `${API_BASE}/clients/${encodeURIComponent(clientData.id)}/licenses?limit=1`,
+            `${API_BASE}/clients/${encodeURIComponent(
+              clientData.id
+            )}/licenses?limit=1`,
             { headers }
           );
           if (rL2.ok) {
@@ -679,11 +716,17 @@ export default function EditEmail() {
     }
   };
 
-  // Generate temporary password & send by email
+  // Generate temporary password & send by email (จาก Advanced panel)
   const handleGenerateTempPasswordAndSend = async () => {
     if (!loadedClient?.id) return;
-    if (!loadedClient?.email) return window.alert("Client นี้ไม่มีอีเมลสำหรับส่งรหัสผ่าน");
-    if (!window.confirm("ต้องการสร้างรหัสผ่านชั่วคราวและส่งให้ลูกค้าทางอีเมลหรือไม่?")) return;
+    if (!loadedClient?.email)
+      return window.alert("Client นี้ไม่มีอีเมลสำหรับส่งรหัสผ่าน");
+    if (
+      !window.confirm(
+        "ต้องการสร้างรหัสผ่านชั่วคราวและส่งให้ลูกค้าทางอีเมลหรือไม่?"
+      )
+    )
+      return;
 
     try {
       const payload = {
@@ -700,7 +743,9 @@ export default function EditEmail() {
       };
 
       const r = await fetch(
-        `${API_BASE}/clients/${encodeURIComponent(loadedClient.id)}/credentials/reset`,
+        `${API_BASE}/clients/${encodeURIComponent(
+          loadedClient.id
+        )}/credentials/reset`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -741,63 +786,149 @@ export default function EditEmail() {
         />
       );
     }
-    return <div style={styles.previewBody}>{preview.body || "(preview body)"}</div>;
+    return (
+      <div style={styles.previewBody}>{preview.body || "(preview body)"}</div>
+    );
   };
 
+  // ส่ง Email + reset password สำหรับ client ที่เลือก
   const handleSendTestEmail = async () => {
-  setTestResult("");
-  if (!selectedClientId) {
-    setTestResult("กรุณาเลือก Client ที่จะใช้ส่ง Email");
-    return;
-  }
-  const client = clients.find((c) => c.id === selectedClientId);
-  if (!client) {
-    setTestResult("ไม่พบข้อมูล Client ที่เลือก");
-    return;
-  }
-  if (!client.email) {
-    setTestResult("Client นี้ไม่มีอีเมล");
-    return;
-  }
+    setTestResult("");
 
-  setSendingTest(true);
-  try {
-    const vars = buildPreviewVars();
-
-    const token = localStorage.getItem("token");
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
+    if (!selectedClientId) {
+      setTestResult("กรุณาเลือก Client ที่จะใช้ส่ง Email");
+      return;
     }
 
-    const r = await fetch(`${API_BASE}/email-templates/${templateId}/send-test`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        to: client.email,
-        variables: vars,
-      }),
-    });
-
-    if (!r.ok) {
-      // ลองอ่าน error message จาก backend
-      const txt = await r.text();
-      throw new Error(txt || `HTTP ${r.status}`);
+    const simpleClient = clients.find((c) => c.id === selectedClientId);
+    if (!simpleClient) {
+      setTestResult("ไม่พบข้อมูล Client ที่เลือก");
+      return;
+    }
+    if (!simpleClient.email) {
+      setTestResult("Client นี้ไม่มีอีเมล");
+      return;
     }
 
-    setTestResult(`✅ ส่ง Email ไปที่ ${client.email} สำเร็จ!`);
-  } catch (e) {
-    console.error("send-test error:", e);
-    setTestResult(
-      `❌ ส่งไม่สำเร็จ: ${e?.message || "กรุณาตรวจสอบการตั้งค่า SMTP / API"}`
-    );
-  } finally {
-    setSendingTest(false);
-  }
-};
+    setSendingTest(true);
+    try {
+      const token = localStorage.getItem("token");
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      const jsonHeaders = {
+        "Content-Type": "application/json",
+        ...authHeaders,
+      };
 
+      // 1) โหลดข้อมูล client เต็ม ๆ
+      const clientRes = await fetch(
+        `${API_BASE}/clients/${encodeURIComponent(selectedClientId)}`,
+        { headers: authHeaders }
+      );
+      if (!clientRes.ok) {
+        const txt = await clientRes.text();
+        throw new Error(
+          txt || `โหลดข้อมูล client ไม่สำเร็จ (HTTP ${clientRes.status})`
+        );
+      }
+      let fullClient = await clientRes.json();
+
+      // 2) reset password เพื่อสร้าง temporary password ใหม่
+      // ⚠️ ตรงนี้จะเปลี่ยน password จริงของ client
+      const resetRes = await fetch(
+        `${API_BASE}/clients/${encodeURIComponent(
+          selectedClientId
+        )}/credentials/reset`,
+        {
+          method: "POST",
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            length: 12,
+            send_email: false, // ไม่ให้ backend ส่งเมลอีกซ้ำ
+          }),
+        }
+      );
+      if (!resetRes.ok) {
+        const txt = await resetRes.text();
+        throw new Error(
+          txt || `reset password ไม่สำเร็จ (HTTP ${resetRes.status})`
+        );
+      }
+      const resetData = await resetRes.json(); // { client_id, username, temporary_password }
+
+      fullClient = {
+        ...fullClient,
+        username: resetData.username || fullClient.username,
+        plain_password: resetData.temporary_password,
+      };
+
+      // 3) โหลด license ล่าสุด (optional)
+      let latestLicense = null;
+      try {
+        const licRes = await fetch(
+          `${API_BASE}/clients/${encodeURIComponent(
+            selectedClientId
+          )}/licenses`,
+          { headers: authHeaders }
+        );
+        if (licRes.ok) {
+          const raw = await licRes.json();
+          const licArr =
+            (Array.isArray(raw) && raw) ||
+            raw.licenses ||
+            raw.items ||
+            raw.results ||
+            (Array.isArray(raw?.data) ? raw.data : null) ||
+            [];
+          if (Array.isArray(licArr) && licArr.length) {
+            latestLicense = licArr[0];
+          }
+        }
+      } catch (e) {
+        console.warn("load licenses for test email error:", e);
+      }
+
+      // 4) อัปเดต state สำหรับ preview
+      setLoadedClient(fullClient);
+      setLoadedLicense(latestLicense);
+      setIncludePlainPassword(true);
+
+      // 5) build variables จากข้อมูลจริง
+      const vars = buildPreviewVars(fullClient, latestLicense);
+
+      // 6) ยิง send-test ไป backend
+      const r = await fetch(
+        `${API_BASE}/email-templates/${templateId}/send-test`,
+        {
+          method: "POST",
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            to: fullClient.email || simpleClient.email,
+            variables: vars,
+          }),
+        }
+      );
+
+      if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(txt || `HTTP ${r.status}`);
+      }
+
+      setTestResult(
+        `✅ ส่ง Email ไปที่ ${
+          fullClient.email || simpleClient.email
+        } สำเร็จ!`
+      );
+    } catch (e) {
+      console.error("send-test error:", e);
+      setTestResult(
+        `❌ ส่งไม่สำเร็จ: ${
+          e?.message || "กรุณาตรวจสอบการตั้งค่า SMTP / API"
+        }`
+      );
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -848,7 +979,8 @@ export default function EditEmail() {
             >
               Email templates
             </span>
-            &nbsp;&gt;&nbsp;<span style={{ color: THEME.accent }}>Edit template</span>
+            &nbsp;&gt;&nbsp;
+            <span style={{ color: THEME.accent }}>Edit template</span>
           </div>
 
           <div style={styles.formContainer}>
@@ -861,7 +993,9 @@ export default function EditEmail() {
                 <div style={styles.sectionTitle}>1. Template details</div>
 
                 <div style={styles.dashed}>
-                  <div style={styles.dashedTitle}>Automatic email to customers</div>
+                  <div style={styles.dashedTitle}>
+                    Automatic email to customers
+                  </div>
                 </div>
 
                 {/* Row: name + slug (slug readonly) */}
@@ -877,9 +1011,6 @@ export default function EditEmail() {
                       placeholder="Welcome / Credentials + License"
                       style={styles.input}
                     />
-                    <div style={styles.smallMuted}>
-                      <span style={{ fontStyle: "italic" }}>"Welcome email"</span>
-                    </div>
                   </div>
 
                   <div style={{ width: "38%" }}>
@@ -887,7 +1018,11 @@ export default function EditEmail() {
                       name="slug"
                       value={form.slug}
                       readOnly
-                      style={{ ...styles.input, opacity: 0.6, cursor: "not-allowed" }}
+                      style={{
+                        ...styles.input,
+                        opacity: 0.6,
+                        cursor: "not-allowed",
+                      }}
                     />
                   </div>
                 </div>
@@ -948,6 +1083,9 @@ export default function EditEmail() {
                     checked={form.is_html}
                     onChange={handleChange}
                   />
+                  <label htmlFor="is_html" style={{ fontSize: 13 }}>
+                    This template is HTML
+                  </label>
                 </div>
 
                 {/* Body */}
@@ -967,22 +1105,40 @@ export default function EditEmail() {
                 {/* Helper variables */}
                 <div style={styles.helperCard}>
                   <div>
-                    <span style={styles.helperTag}>{"{{ client.first_name }}"}</span>
-                    <span style={styles.helperTag}>{"{{ client.email }}"}</span>
-                    <span style={styles.helperTag}>{"{{ license.license_key }}"}</span>
-                    <span style={styles.helperTag}>{"{{ license.expires_at }}"}</span>
-                    <span style={styles.helperTag}>{"{{ meta.app_name }}"}</span>
+                    <span style={styles.helperTag}>
+                      {"{{ client.first_name }}"}
+                    </span>
+                    <span style={styles.helperTag}>
+                      {"{{ client.email }}"}
+                    </span>
+                    <span style={styles.helperTag}>
+                      {"{{ client.username }}"}
+                    </span>
+                    <span style={styles.helperTag}>
+                      {"{{ client.plain_password }}"}
+                    </span>
+                    <span style={styles.helperTag}>
+                      {"{{ license.license_key }}"}
+                    </span>
+                    <span style={styles.helperTag}>
+                      {"{{ license.expires_at }}"}
+                    </span>
+                    <span style={styles.helperTag}>
+                      {"{{ meta.app_name }}"}
+                    </span>
                   </div>
                 </div>
 
-                {/* Section 3: Test email */}
+                {/* Section 3: Send email */}
                 <hr style={styles.hr} />
                 <div style={styles.sectionTitle}>3. Send email</div>
 
                 {/* dropdown เลือก client */}
                 <div style={{ marginBottom: 6 }}>
                   <div style={styles.labelRow}>
-                    <div style={styles.label}>เลือก Client เพื่อส่ง Email</div>
+                    <div style={styles.label}>
+                      เลือก Client เพื่อส่ง Email
+                    </div>
                   </div>
                   <div
                     style={{
@@ -1005,13 +1161,13 @@ export default function EditEmail() {
                         <option key={c.id} value={c.id}>
                           {c.name} ({c.email})
                         </option>
-
                       ))}
                     </select>
                     <button
                       onClick={handleSendTestEmail}
                       disabled={sendingTest || clientsLoading}
                       style={styles.btnPrimary}
+                      title="จะ reset password ของ client เป็นรหัสใหม่ แล้วส่งอีเมลนี้ไป"
                     >
                       {sendingTest ? "กำลังส่ง…" : "ส่ง Email"}
                     </button>
@@ -1091,8 +1247,11 @@ export default function EditEmail() {
                           id="includePwd"
                           type="checkbox"
                           checked={includePlainPassword}
-                          onChange={(e) => setIncludePlainPassword(e.target.checked)}
+                          onChange={(e) =>
+                            setIncludePlainPassword(e.target.checked)
+                          }
                         />
+                        <span>Show plain password (ถ้ามี)</span>
                       </label>
                     </div>
                     {clientError && (
@@ -1112,12 +1271,20 @@ export default function EditEmail() {
                     {loadedClient && (
                       <div style={{ ...styles.dashed, marginTop: 10 }}>
                         <div
-                          style={{ color: THEME.text, fontWeight: 900, marginBottom: 4 }}
+                          style={{
+                            color: THEME.text,
+                            fontWeight: 900,
+                            marginBottom: 4,
+                          }}
                         >
                           Loaded client
                         </div>
                         <div style={{ color: THEME.textMut, fontSize: 13 }}>
-                          Name: {loadedClient.first_name || loadedClient.name || "(n/a)"}
+                          Name:{" "}
+                          {loadedClient.first_name ||
+                            loadedClient.firstName ||
+                            loadedClient.name ||
+                            "(n/a)"}
                         </div>
                         <div style={{ color: THEME.textMut, fontSize: 13 }}>
                           Email: {loadedClient.email || "(n/a)"}
@@ -1132,7 +1299,9 @@ export default function EditEmail() {
                               loadedClient.password ||
                               "(not provided)"
                             : mask(
-                                loadedClient.plain_password || loadedClient.password || ""
+                                loadedClient.plain_password ||
+                                  loadedClient.password ||
+                                  ""
                               )}
                         </div>
 
@@ -1144,7 +1313,10 @@ export default function EditEmail() {
                             flexWrap: "wrap",
                           }}
                         >
-                          <button onClick={handleLoadUsername} style={styles.btnGhost}>
+                          <button
+                            onClick={handleLoadUsername}
+                            style={styles.btnGhost}
+                          >
                             Load Username
                           </button>
                           <button
@@ -1162,25 +1334,32 @@ export default function EditEmail() {
                     {loadedLicense && (
                       <div style={{ ...styles.dashed, marginTop: 10 }}>
                         <div
-                          style={{ color: THEME.text, fontWeight: 900, marginBottom: 4 }}
+                          style={{
+                            color: THEME.text,
+                            fontWeight: 900,
+                            marginBottom: 4,
+                          }}
                         >
                           Loaded license
                         </div>
                         <div style={{ color: THEME.textMut, fontSize: 13 }}>
                           Key:{" "}
                           {loadedLicense.license_key ||
+                            loadedLicense.licenseKey ||
                             loadedLicense.key ||
                             "(n/a)"}
                         </div>
                         <div style={{ color: THEME.textMut, fontSize: 13 }}>
                           Product:{" "}
                           {loadedLicense.product_sku ||
+                            loadedLicense.productSku ||
                             loadedLicense.product ||
                             "(n/a)"}
                         </div>
                         <div style={{ color: THEME.textMut, fontSize: 13 }}>
                           Expires:{" "}
                           {loadedLicense.expires_at ||
+                            loadedLicense.expiresAt ||
                             loadedLicense.expires ||
                             "(n/a)"}
                         </div>
@@ -1205,7 +1384,7 @@ export default function EditEmail() {
                     style={styles.btnDangerOutline}
                     title="Delete this template"
                   >
-                    {deleting ? "กำลังลบ…" : "ลบเทมเพลตนี้"}
+                    {deleting ? "กำลังลบ…" : "ลบเทมเพลต"}
                   </button>
 
                   <div style={{ display: "flex", gap: 10 }}>
