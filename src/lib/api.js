@@ -25,7 +25,6 @@
 //   api(`/admin/api-keys/${id}`, { method: "DELETE" });
 
 // src/lib/api.js
-// src/lib/api.js
 import { API_BASE } from "../config";
 
 /** low-level fetch helper */
@@ -47,14 +46,36 @@ async function api(path, opts = {}) {
 }
 
 /* ---------------- Activity Logs ---------------- */
-export function listActivityLogs({ user, action, since } = {}) {
-  const params = new URLSearchParams();
-  if (user) params.set("user", user);
-  if (action) params.set("action", action);
-  if (since) params.set("since", since);
-  const qs = params.toString();
-  return api(`/admin/activity-logs${qs ? `?${qs}` : ""}`);
+export async function listActivityLogs(params = {}) {
+  const query = new URLSearchParams(params).toString();
+
+  const res = await fetch(
+    `${API_BASE}/admin/activity-logs${query ? `?${query}` : ""}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to load activity logs");
+  }
+
+  const data = await res.json();
+
+  // 🔥 แปลง field ให้ตรงกับ frontend
+  return (data.items || []).map((item) => ({
+    id: item.id,
+    actor: item.user,          // user → actor
+    action: item.action,
+    message: item.detail,      // detail → message
+    created_at: item.created_at,
+  }));
 }
+
+
 
 /* ---------------- API Keys ---------------- */
 export function listApiKeys({ q, status, scope, page = 1, page_size = 50 } = {}) {
@@ -85,3 +106,4 @@ export function deleteApiKey(id) {
   // ลบจริงถาวร (แยกจาก revoke)
   return api(`/admin/api-keys/${id}`, { method: "DELETE" });
 }
+

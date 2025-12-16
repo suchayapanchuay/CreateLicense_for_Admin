@@ -130,7 +130,7 @@ export default function AdminUsers() {
       if (debounced) url.searchParams.set("search", debounced);
       if (roleFilter !== "all") url.searchParams.set("role", roleFilter);
 
-      const res = await fetch(url.toString(), { credentials: "include" });
+      const res = await fetch(url, { credentials: "include" })
       const txt = await res.text();
       let data = null;
       try { data = txt ? JSON.parse(txt) : null; } catch {}
